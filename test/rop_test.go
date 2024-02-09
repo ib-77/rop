@@ -2,8 +2,8 @@ package test
 
 import (
 	"errors"
+	"github.com/ib-77/rop/pkg/rop"
 	"github.com/stretchr/testify/assert"
-	"rop/pkg/rop"
 	"strconv"
 	"testing"
 )

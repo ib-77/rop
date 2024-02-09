@@ -3,7 +3,7 @@ package test
 import (
 	"errors"
 	"fmt"
-	"rop/pkg/rop"
+	"github.com/ib-77/rop/pkg/rop"
 )
 
 func ropCase01(input int) string {

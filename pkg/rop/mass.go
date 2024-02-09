@@ -7,20 +7,24 @@ import (
 )
 
 func MassValidate[T any](ctx context.Context, inputs <-chan T,
-	beginF func(in T) bool, cancelF func(in T) error, errMsg string) <-chan Rop[T] {
+	validateF func(in T) bool, cancelF func(in T) error, errMsg string) <-chan Rop[T] {
+
 	out := make(chan Rop[T])
-	go func() {
+	go func(ctx context.Context, inputs <-chan T) {
+		defer close(out)
+
 		for in := range inputs {
 
 			select {
 			case <-ctx.Done():
+				out <- Cancel[T](cancelF(in)) // cancel current !!!
 				MassValidateCancelWith(inputs, out, cancelF)
-				return
+				break
 			default:
-				out <- Validate(in, beginF, errMsg)
+				out <- Validate(in, validateF, errMsg)
 			}
 		}
-	}()
+	}(ctx, inputs)
 
 	return out
 }
@@ -29,11 +33,14 @@ func MassSwitch[In any, Out any](ctx context.Context, inputs <-chan Rop[In],
 	switchF func(r In) Rop[Out], cancelF func(r Rop[In]) error) <-chan Rop[Out] {
 	out := make(chan Rop[Out])
 
-	go func() {
+	go func(ctx context.Context, inputs <-chan Rop[In]) {
+		defer close(out)
+
 		for in := range inputs {
 
 			select {
 			case <-ctx.Done():
+				out <- CancelWith[In, Out](in, cancelF) // cancel current !!!
 				MassCancelWith(inputs, out, cancelF)
 				return
 			default:
@@ -41,7 +48,7 @@ func MassSwitch[In any, Out any](ctx context.Context, inputs <-chan Rop[In],
 			}
 
 		}
-	}()
+	}(ctx, inputs)
 	return out
 }
 
@@ -50,11 +57,14 @@ func MassMap[In any, Out any](ctx context.Context, inputs <-chan Rop[In],
 
 	out := make(chan Rop[Out])
 
-	go func() {
+	go func(ctx context.Context, inputs <-chan Rop[In]) {
+		defer close(out)
+
 		for in := range inputs {
 
 			select {
 			case <-ctx.Done():
+				out <- CancelWith[In, Out](in, cancelF) // cancel current !!!
 				MassCancelWith(inputs, out, cancelF)
 				return
 			default:
@@ -62,7 +72,7 @@ func MassMap[In any, Out any](ctx context.Context, inputs <-chan Rop[In],
 			}
 
 		}
-	}()
+	}(ctx, inputs)
 	return out
 }
 
@@ -71,18 +81,21 @@ func MassTee[T any](ctx context.Context, inputs <-chan Rop[T],
 
 	out := make(chan Rop[T])
 
-	go func() {
+	go func(ctx context.Context, inputs <-chan Rop[T]) {
+		defer close(out)
+
 		for in := range inputs {
 
 			select {
 			case <-ctx.Done():
+				out <- CancelWith[T, T](in, cancelF) // cancel current !!!
 				MassCancelWith(inputs, out, cancelF)
 				return
 			default:
 				out <- Tee(in, deadEndF)
 			}
 		}
-	}()
+	}(ctx, inputs)
 	return out
 }
 
@@ -91,18 +104,21 @@ func MassDoubleMap[In any, Out any](ctx context.Context, inputs <-chan Rop[In],
 
 	out := make(chan Rop[Out])
 
-	go func() {
+	go func(ctx context.Context, inputs <-chan Rop[In]) {
+		defer close(out)
+
 		for in := range inputs {
 
 			select {
 			case <-ctx.Done():
+				out <- CancelWith[In, Out](in, cancelF) // cancel current !!!
 				MassCancelWith(inputs, out, cancelF)
 				return
 			default:
 				out <- DoubleMap(in, successF, failF)
 			}
 		}
-	}()
+	}(ctx, inputs)
 	return out
 }
 
@@ -138,58 +154,67 @@ func MassTry[In any, Out any](ctx context.Context, inputs <-chan Rop[In],
 
 	out := make(chan Rop[Out])
 
-	go func() {
+	go func(ctx context.Context, inputs <-chan Rop[In]) {
+		defer close(out)
+
 		for in := range inputs {
 
 			select {
 			case <-ctx.Done():
+				out <- CancelWith[In, Out](in, cancelF) // cancel current !!!
 				MassCancelWith(inputs, out, cancelF)
 				return
 			default:
 				out <- Try(in, withErrF)
 			}
 		}
-	}()
+	}(ctx, inputs)
 	return out
 }
 
 func MassCheck[In any](ctx context.Context, inputs <-chan Rop[In],
-	boolF func(r In) bool, falseErrMsg string, cancelF func(r In) error) <-chan Rop[bool] {
+	boolF func(r In) bool, falseErrMsg string, cancelF func(r Rop[In]) error) <-chan Rop[bool] {
 
 	out := make(chan Rop[bool])
 
-	go func() {
+	go func(ctx context.Context, inputs <-chan Rop[In]) {
+		defer close(out)
+
 		for in := range inputs {
 
 			select {
 			case <-ctx.Done():
+				out <- Cancel[bool](cancelF(in)) // cancel current !!!
 				MassCheckCancelWith(inputs, out, cancelF)
 				return
 			default:
 				out <- Check(in, boolF, falseErrMsg)
 			}
 		}
-	}()
+	}(ctx, inputs)
 	return out
 }
 
 func MassFinally[Out, In any](ctx context.Context, inputs <-chan Rop[In],
-	successF func(r In) Out, failF func(err error) Out, cancelF func(r In) Out) <-chan Out {
+	successF func(r In) Out, failF func(err error) Out, cancelF func(r Rop[In]) Out) <-chan Out {
 
 	out := make(chan Out)
 
-	go func() {
+	go func(ctx context.Context, inputs <-chan Rop[In]) {
+		defer close(out)
+
 		for in := range inputs {
 
 			select {
 			case <-ctx.Done():
+				out <- cancelF(in) // cancel current !!!
 				MassFinallyCancelWith(inputs, out, cancelF)
 				return
 			default:
 				out <- Finally(in, successF, failF)
 			}
 		}
-	}()
+	}(ctx, inputs)
 	return out
 }
 
@@ -235,20 +260,20 @@ func MassCancelWith[In any, Out any](inputs <-chan Rop[In], outs chan Rop[Out],
 }
 
 func MassFinallyCancelWith[Out, In any](inputs <-chan Rop[In], outs chan Out,
-	cancelF func(r In) Out) <-chan Out {
+	cancelF func(r Rop[In]) Out) <-chan Out {
 
 	for c := range inputs {
-		outs <- cancelF(c.Result())
+		outs <- cancelF(c)
 	}
 
 	return outs
 }
 
 func MassCheckCancelWith[In any](inputs <-chan Rop[In], outs chan Rop[bool],
-	cancelF func(r In) error) <-chan Rop[bool] {
+	cancelF func(r Rop[In]) error) <-chan Rop[bool] {
 
 	for c := range inputs {
-		outs <- Cancel[bool](cancelF(c.Result()))
+		outs <- Cancel[bool](cancelF(c))
 	}
 	return outs
 }
