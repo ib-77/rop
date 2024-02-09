@@ -1,1 +1,2 @@
-# rop
+# railway oriented programming (rop)
+
