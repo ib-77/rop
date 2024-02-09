@@ -1,4 +1,4 @@
-module rop
+module github.com/ib-77/rop
 
 go 1.21
 
