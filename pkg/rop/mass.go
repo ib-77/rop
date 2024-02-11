@@ -29,6 +29,29 @@ func MassValidate[T any](ctx context.Context, inputs <-chan T,
 	return out
 }
 
+func MassAndValidate[T any](ctx context.Context, inputs <-chan Rop[T],
+	validateF func(in T) bool, cancelF func(in Rop[T]) error, errMsg string) <-chan Rop[T] {
+
+	out := make(chan Rop[T])
+	go func(ctx context.Context, inputs <-chan Rop[T], errMsg string) {
+		defer close(out)
+
+		for in := range inputs {
+			select {
+			case <-ctx.Done():
+				out <- Cancel[T](cancelF(in)) // cancel current !!!
+				MassAndValidateCancelWith[T](inputs, out, cancelF)
+				break
+			default:
+				out <- AndValidate(in, validateF, errMsg)
+			}
+		}
+
+	}(ctx, inputs, errMsg)
+
+	return out
+}
+
 func MassSwitch[In any, Out any](ctx context.Context, inputs <-chan Rop[In],
 	switchF func(r In) Rop[Out], cancelF func(r Rop[In]) error) <-chan Rop[Out] {
 	out := make(chan Rop[Out])
@@ -53,7 +76,7 @@ func MassSwitch[In any, Out any](ctx context.Context, inputs <-chan Rop[In],
 }
 
 func MassMap[In any, Out any](ctx context.Context, inputs <-chan Rop[In],
-	mapF func(r In) Out, cancelF func(r Rop[In]) error) <-chan Rop[Out] {
+	mapF func(r In) (Out, error), cancelF func(r Rop[In]) error) <-chan Rop[Out] {
 
 	out := make(chan Rop[Out])
 
@@ -142,6 +165,15 @@ func MassFailWith[In any, Out any](inputs <-chan Rop[In], outs chan Rop[Out],
 
 func MassValidateCancelWith[In any](inputs <-chan In, outs chan Rop[In],
 	cancelF func(r In) error) <-chan Rop[In] {
+
+	for c := range inputs {
+		outs <- Cancel[In](cancelF(c))
+	}
+	return outs
+}
+
+func MassAndValidateCancelWith[In any](inputs <-chan Rop[In], outs chan Rop[In],
+	cancelF func(r Rop[In]) error) <-chan Rop[In] {
 
 	for c := range inputs {
 		outs <- Cancel[In](cancelF(c))

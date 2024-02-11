@@ -46,8 +46,8 @@ func greaterThanZero(a int) rop.Rop[int] {
 	return rop.Fail[int](errors.New("a is less or 0!"))
 }
 
-func addChars(r string) string {
-	return r + "fff"
+func addChars(r string) (string, error) {
+	return r + "fff", nil
 }
 
 func equalHundredOrThrowError(r int) (string, error) {

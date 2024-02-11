@@ -4,61 +4,6 @@ import (
 	"errors"
 )
 
-type Rop[T any] interface {
-	Result() T
-	Err() error
-	IsSuccess() bool
-	IsCancel() bool
-}
-
-type ropResult[T any] struct {
-	result    T
-	err       error
-	isSuccess bool
-	isCancel  bool
-}
-
-func Success[T any](r T) Rop[T] {
-	return ropResult[T]{
-		result:    r,
-		err:       nil,
-		isSuccess: true,
-		isCancel:  false,
-	}
-}
-
-func Fail[T any](err error) Rop[T] {
-	return ropResult[T]{
-		err:       err,
-		isSuccess: false,
-		isCancel:  false,
-	}
-}
-
-func Cancel[T any](err error) Rop[T] {
-	return ropResult[T]{
-		err:       err,
-		isSuccess: false,
-		isCancel:  true,
-	}
-}
-
-func (r ropResult[T]) Result() T {
-	return r.result
-}
-
-func (r ropResult[T]) Err() error {
-	return r.err
-}
-
-func (r ropResult[T]) IsSuccess() bool {
-	return r.isSuccess
-}
-
-func (r ropResult[T]) IsCancel() bool {
-	return r.isCancel
-}
-
 func Validate[T any](input T, validateF func(in T) bool, errMsg string) Rop[T] {
 	if validateF(input) {
 		return Success(input)
@@ -89,10 +34,16 @@ func Switch[In any, Out any](input Rop[In], switchF func(r In) Rop[Out]) Rop[Out
 	}
 }
 
-func Map[In any, Out any](input Rop[In], mapF func(r In) Out) Rop[Out] {
+func Map[In any, Out any](input Rop[In], mapF func(r In) (Out, error)) Rop[Out] {
 
 	if input.IsSuccess() {
-		return Success(mapF(input.Result()))
+
+		r, err := mapF(input.Result())
+
+		if err != nil {
+			return Fail[Out](err)
+		}
+		return Success(r)
 	} else {
 		return Fail[Out](input.Err())
 	}

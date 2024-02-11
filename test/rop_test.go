@@ -101,8 +101,8 @@ func Test_OnSuccessMap_StaySuccess(t *testing.T) {
 	value := 100
 	okValue := "ok"
 	input := rop.Success(value)
-	result := rop.Map(input, func(a int) string {
-		return okValue
+	result := rop.Map(input, func(a int) (string, error) {
+		return okValue, nil
 	})
 
 	assert.True(t, result.IsSuccess())
@@ -114,8 +114,8 @@ func Test_OnSuccessMap_StaySuccess(t *testing.T) {
 func Test_OnSuccessMap_StayFail(t *testing.T) {
 	okValue := "ok"
 	input := rop.Fail[int](errors.New("fail3"))
-	result := rop.Map(input, func(a int) string {
-		return okValue
+	result := rop.Map(input, func(a int) (string, error) {
+		return okValue, nil
 	})
 
 	assert.False(t, result.IsSuccess())
