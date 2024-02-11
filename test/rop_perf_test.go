@@ -1,6 +1,7 @@
 package test
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"runtime/pprof"
@@ -9,7 +10,7 @@ import (
 	"time"
 )
 
-func TestPerfBegin(t *testing.T) {
+func TestPerfSingle(t *testing.T) {
 
 	Profile(
 		func() {
@@ -17,6 +18,20 @@ func TestPerfBegin(t *testing.T) {
 
 		},
 		"case01",
+		true,
+		true)
+
+}
+
+func TestPerfMass(t *testing.T) {
+
+	Profile(
+		func() {
+			ctx := context.Background()
+			massRopCase01(ctx, generateFixedValueUnbufferedChan(5, 1))
+
+		},
+		"mass-case01",
 		true,
 		true)
 
