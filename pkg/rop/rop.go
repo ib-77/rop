@@ -52,6 +52,7 @@ func Tee[T any](input Rop[T], deadEndF func(r Rop[T])) Rop[T] {
 	return input
 }
 
+// TeeWithError TODO unit test
 func TeeWithError[T any](input Rop[T], deadEndF func(r Rop[T]) error) Rop[T] {
 
 	if input.IsSuccess() {
@@ -88,6 +89,7 @@ func Try[In any, Out any](input Rop[In], withErrF func(r In) (Out, error)) Rop[O
 	return Fail[Out](input.Err())
 }
 
+// Check TODO unit test
 func Check[In any](input Rop[In], boolF func(r In) bool, falseErrMsg string) Rop[bool] {
 
 	if input.IsSuccess() {
