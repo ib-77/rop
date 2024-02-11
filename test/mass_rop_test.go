@@ -208,7 +208,42 @@ func Test_MassMap_Fail(t *testing.T) {
 		rop.MassValidate(ctx, inputs, allSuccess[int], CancelF[int], "error"),
 		failConvertIntToStr, CancelRopF[int]) {
 
+		assert.True(t, output.IsSuccess())
+		assert.Equal(t, output.Result(), "cannot convert")
+		count++
+	}
+	assert.Equal(t, totalElements, count)
+}
+
+func Test_MassTry_Success(t *testing.T) {
+	totalElements := 5
+	ctx := context.Background()
+	inputs := generateUnbufferedChan(totalElements)
+	count := 0
+
+	for output := range rop.MassTry(ctx,
+		rop.MassValidate(ctx, inputs, allSuccess[int], CancelF[int], "error"),
+		successConvertIntToStrWithErr, CancelRopF[int]) {
+
+		assert.True(t, output.IsSuccess())
+		assert.Equal(t, reflect.TypeOf(output.Result()).Kind(), reflect.String)
+		count++
+	}
+	assert.Equal(t, totalElements, count)
+}
+
+func Test_MassTry_Fail(t *testing.T) {
+	totalElements := 5
+	ctx := context.Background()
+	inputs := generateUnbufferedChan(totalElements)
+	count := 0
+
+	for output := range rop.MassTry(ctx,
+		rop.MassValidate(ctx, inputs, allSuccess[int], CancelF[int], "error"),
+		failConvertIntToStrWithErr, CancelRopF[int]) {
+
 		assert.False(t, output.IsSuccess())
+		assert.Empty(t, output.Result())
 		assert.NotEmpty(t, output.Err())
 		count++
 	}
@@ -219,17 +254,25 @@ func successConvertIntToStrResult(r int) rop.Rop[string] {
 	return rop.Success(strconv.Itoa(r))
 }
 
-func successConvertIntToStr(r int) (string, error) {
+func successConvertIntToStr(r int) string {
+	return strconv.Itoa(r)
+}
+
+func successConvertIntToStrWithErr(r int) (string, error) {
 	return strconv.Itoa(r), nil
+}
+
+func failConvertIntToStrWithErr(r int) (re string, err error) {
+	err = fmt.Errorf("cannot convert %d", r)
+	return
 }
 
 func failConvertIntToStrResult(r int) rop.Rop[string] {
 	return rop.Fail[string](fmt.Errorf("cannot convert %d", r))
 }
 
-func failConvertIntToStr(r int) (string, err error) {
-	err = fmt.Errorf("cannot convert %d", r)
-	return
+func failConvertIntToStr(r int) string {
+	return "cannot convert"
 }
 
 // helpers

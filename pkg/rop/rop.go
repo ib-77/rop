@@ -34,16 +34,10 @@ func Switch[In any, Out any](input Rop[In], switchF func(r In) Rop[Out]) Rop[Out
 	}
 }
 
-func Map[In any, Out any](input Rop[In], mapF func(r In) (Out, error)) Rop[Out] {
+func Map[In any, Out any](input Rop[In], mapF func(r In) Out) Rop[Out] {
 
 	if input.IsSuccess() {
-
-		r, err := mapF(input.Result())
-
-		if err != nil {
-			return Fail[Out](err)
-		}
-		return Success(r)
+		return Success(mapF(input.Result()))
 	} else {
 		return Fail[Out](input.Err())
 	}

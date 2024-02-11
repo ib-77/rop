@@ -2,8 +2,6 @@ package rop
 
 import (
 	"context"
-	"fmt"
-	"sync"
 )
 
 func MassValidate[T any](ctx context.Context, inputs <-chan T,
@@ -76,7 +74,7 @@ func MassSwitch[In any, Out any](ctx context.Context, inputs <-chan Rop[In],
 }
 
 func MassMap[In any, Out any](ctx context.Context, inputs <-chan Rop[In],
-	mapF func(r In) (Out, error), cancelF func(r Rop[In]) error) <-chan Rop[Out] {
+	mapF func(r In) Out, cancelF func(r Rop[In]) error) <-chan Rop[Out] {
 
 	out := make(chan Rop[Out])
 
@@ -250,38 +248,6 @@ func MassFinally[Out, In any](ctx context.Context, inputs <-chan Rop[In],
 	return out
 }
 
-func MassAggregate[T any](inputs ...<-chan Rop[T]) <-chan Rop[T] {
-	output := make(chan Rop[T])
-	var wg sync.WaitGroup
-
-	for _, in := range inputs {
-		wg.Add(1)
-		go func(int <-chan Rop[T]) {
-			defer wg.Done()
-			// If in is closed, then the
-			// loop will ends eventually.
-			for x := range in {
-				output <- x
-			}
-		}(in)
-	}
-	go func() {
-		wg.Wait()
-		close(output)
-	}()
-	return output
-}
-
-func MassDivide[T any](input <-chan Rop[T], outputs ...chan<- Rop[T]) {
-	for _, out := range outputs {
-		go func(o chan<- Rop[T]) {
-			for {
-				o <- <-input // <=> o <- (<-input)
-			}
-		}(out)
-	}
-}
-
 func MassCancelWith[In any, Out any](inputs <-chan Rop[In], outs chan Rop[Out],
 	cancelF func(r Rop[In]) error) <-chan Rop[Out] {
 
@@ -308,16 +274,4 @@ func MassCheckCancelWith[In any](inputs <-chan Rop[In], outs chan Rop[bool],
 		outs <- Cancel[bool](cancelF(c))
 	}
 	return outs
-}
-
-func PrintAll[T any](ctx context.Context, inputs <-chan Rop[T]) {
-	MassTee(ctx, inputs, func(r Rop[T]) {
-		if r.IsSuccess() {
-			fmt.Printf("result: %v", r.Result())
-		} else {
-			fmt.Printf("error: %v", r.Err())
-		}
-	}, func(r Rop[T]) error {
-		return fmt.Errorf("canceled: %v", r)
-	})
 }
