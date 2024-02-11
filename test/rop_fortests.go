@@ -1,6 +1,7 @@
 package test
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"github.com/ib-77/rop/pkg/rop"
@@ -25,6 +26,35 @@ func ropCase01(input int) string {
 		returnSuccessResult, returnFailResult)
 }
 
+func massRopCase01(ctx context.Context, inputs <-chan int) <-chan string {
+	return rop.MassFinally(ctx,
+		rop.MassDoubleMap(ctx,
+			rop.MassMap(ctx,
+				rop.MassTee(ctx,
+					rop.MassTry(ctx,
+						rop.MassSwitch(ctx,
+							rop.MassAndValidate(ctx,
+								rop.MassValidate(ctx, inputs,
+									lessTwo, cancelF[int], "value more than 2"),
+								notFive, cancelRopF[int], "value is 5"),
+							greaterThanZero, cancelRopF[int]),
+						equalHundredOrThrowError, cancelRopF[int]),
+					doAndForget, cancelRopF[string]),
+				addChars, cancelRopF[string]),
+			logSuccess, logFail, cancelRopF[string]),
+		returnSuccessResult, returnFailResult, cancelResultF[string])
+}
+
+func cancelF[T any](in T) error {
+	return errors.New("some error")
+}
+
+func cancelRopF[T any](in rop.Rop[T]) error {
+	return errors.New("some error")
+}
+func cancelResultF[T any](in rop.Rop[T]) string {
+	return "some error"
+}
 func lessTwo(a int) bool {
 	if a < 2 {
 		return true
