@@ -7,7 +7,7 @@ import (
 	"github.com/ib-77/rop/pkg/rop"
 )
 
-func ropCase01(input int) string {
+func RopCase01(input int) string {
 	return rop.Finally(
 		rop.DoubleMap(
 			rop.Map(
@@ -26,7 +26,7 @@ func ropCase01(input int) string {
 		returnSuccessResult, returnFailResult)
 }
 
-func massRopCase01(ctx context.Context, inputs <-chan int) <-chan string {
+func MassRopCase01(ctx context.Context, inputs <-chan int) <-chan string {
 	return rop.MassFinally(ctx,
 		rop.MassDoubleMap(ctx,
 			rop.MassMap(ctx,

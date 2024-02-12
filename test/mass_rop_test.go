@@ -324,7 +324,7 @@ func Test_MassCase01_Success(t *testing.T) {
 	inputs := generateFixedValueUnbufferedChan(totalElements, 1)
 	count := 0
 
-	for output := range massRopCase01(ctx, inputs) {
+	for output := range MassRopCase01(ctx, inputs) {
 
 		assert.Equal(t, "all ok", output)
 		assert.Equal(t, reflect.TypeOf(output).Kind(), reflect.String)
@@ -340,7 +340,7 @@ func Test_MassCase01_Fail(t *testing.T) {
 	inputs := generateFixedValueUnbufferedChan(totalElements, 3)
 	count := 0
 
-	for output := range massRopCase01(ctx, inputs) {
+	for output := range MassRopCase01(ctx, inputs) {
 
 		assert.Equal(t, "error: value more than 2", output)
 		assert.Equal(t, reflect.TypeOf(output).Kind(), reflect.String)
@@ -356,7 +356,7 @@ func Test_MassCase01_FailZero(t *testing.T) {
 	inputs := generateFixedValueUnbufferedChan(totalElements, 0)
 	count := 0
 
-	for output := range massRopCase01(ctx, inputs) {
+	for output := range MassRopCase01(ctx, inputs) {
 
 		assert.Equal(t, "error: a is less or 0!", output)
 		assert.Equal(t, reflect.TypeOf(output).Kind(), reflect.String)

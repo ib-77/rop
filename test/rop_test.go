@@ -176,19 +176,19 @@ func Test_OnBothMap_Fail(t *testing.T) {
 }
 
 func TestAll_01_Success(t *testing.T) {
-	result := ropCase01(1)
+	result := RopCase01(1)
 
 	assert.Equal(t, result, "all ok")
 }
 
 func TestAll_01_FailAtStart(t *testing.T) {
-	result := ropCase01(3)
+	result := RopCase01(3)
 
 	assert.Equal(t, result, "error: value more than 2")
 }
 
 func TestAll_01_FailZero(t *testing.T) {
-	result := ropCase01(0)
+	result := RopCase01(0)
 
 	assert.Equal(t, result, "error: a is less or 0!")
 }
