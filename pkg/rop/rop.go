@@ -104,6 +104,21 @@ func Check[In any](input Rop[In], boolF func(r In) bool, falseErrMsg string) Rop
 	return Fail[bool](input.Err())
 }
 
+// CheckCancel TODO unit test
+func CheckCancel[In any](input Rop[In], boolF func(r In) bool, falseCancelMsg string) Rop[bool] {
+
+	if input.IsSuccess() {
+
+		if ok := boolF(input.Result()); ok {
+			return Success[bool](true)
+		} else {
+			return Cancel[bool](errors.New(falseCancelMsg))
+		}
+	}
+
+	return Fail[bool](input.Err())
+}
+
 func Finally[Out, In any](input Rop[In], successF func(r In) Out, failF func(err error) Out) Out {
 	if input.IsSuccess() {
 		return successF(input.Result())
