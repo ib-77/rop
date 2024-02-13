@@ -12,6 +12,14 @@ func Validate[T any](input T, validateF func(in T) bool, errMsg string) Rop[T] {
 	}
 }
 
+func ValidateCancel[T any](input T, validateF func(in T) bool, cancelMsg string) Rop[T] {
+	if validateF(input) {
+		return Success(input)
+	} else {
+		return Cancel[T](errors.New(cancelMsg))
+	}
+}
+
 func AndValidate[T any](input Rop[T], validateF func(in T) bool, errMsg string) Rop[T] {
 	if input.IsSuccess() {
 
@@ -20,7 +28,18 @@ func AndValidate[T any](input Rop[T], validateF func(in T) bool, errMsg string) 
 		} else {
 			return Fail[T](errors.New(errMsg))
 		}
+	}
+	return input
+}
 
+func AndValidateCancel[T any](input Rop[T], validateF func(in T) bool, cancelMsg string) Rop[T] {
+	if input.IsSuccess() {
+
+		if validateF(input.Result()) {
+			return Success(input.Result())
+		} else {
+			return Cancel[T](errors.New(cancelMsg))
+		}
 	}
 	return input
 }
@@ -30,7 +49,11 @@ func Switch[In any, Out any](input Rop[In], switchF func(r In) Rop[Out]) Rop[Out
 	if input.IsSuccess() {
 		return switchF(input.Result())
 	} else {
-		return Fail[Out](input.Err())
+		if input.IsCancel() {
+			return Cancel[Out](input.Err())
+		} else {
+			return Fail[Out](input.Err())
+		}
 	}
 }
 
@@ -39,7 +62,11 @@ func Map[In any, Out any](input Rop[In], mapF func(r In) Out) Rop[Out] {
 	if input.IsSuccess() {
 		return Success(mapF(input.Result()))
 	} else {
-		return Fail[Out](input.Err())
+		if input.IsCancel() {
+			return Cancel[Out](input.Err())
+		} else {
+			return Fail[Out](input.Err())
+		}
 	}
 }
 
@@ -73,7 +100,12 @@ func DoubleMap[In any, Out any](input Rop[In], successF func(r In) Out,
 	}
 
 	failF(input.Err())
-	return Fail[Out](input.Err())
+
+	if input.IsCancel() {
+		return Cancel[Out](input.Err())
+	} else {
+		return Fail[Out](input.Err())
+	}
 }
 
 func Try[In any, Out any](input Rop[In], withErrF func(r In) (Out, error)) Rop[Out] {
@@ -86,7 +118,12 @@ func Try[In any, Out any](input Rop[In], withErrF func(r In) (Out, error)) Rop[O
 
 		return Success(out)
 	}
-	return Fail[Out](input.Err())
+
+	if input.IsCancel() {
+		return Cancel[Out](input.Err())
+	} else {
+		return Fail[Out](input.Err())
+	}
 }
 
 // Check TODO unit test
@@ -101,7 +138,11 @@ func Check[In any](input Rop[In], boolF func(r In) bool, falseErrMsg string) Rop
 		}
 	}
 
-	return Fail[bool](input.Err())
+	if input.IsCancel() {
+		return Cancel[bool](input.Err())
+	} else {
+		return Fail[bool](input.Err())
+	}
 }
 
 // CheckCancel TODO unit test
@@ -116,14 +157,19 @@ func CheckCancel[In any](input Rop[In], boolF func(r In) bool, falseCancelMsg st
 		}
 	}
 
-	return Fail[bool](input.Err())
+	if input.IsCancel() {
+		return Cancel[bool](input.Err())
+	} else {
+		return Fail[bool](input.Err())
+	}
 }
 
-func Finally[Out, In any](input Rop[In], successF func(r In) Out, failF func(err error) Out) Out {
+func Finally[Out, In any](input Rop[In], successF func(r In) Out,
+	failOrCancelF func(err error) Out) Out {
 	if input.IsSuccess() {
 		return successF(input.Result())
 	} else {
-		return failF(input.Err())
+		return failOrCancelF(input.Err())
 	}
 }
 
