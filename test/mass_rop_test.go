@@ -258,7 +258,8 @@ func Test_MassDoubleMap_Success(t *testing.T) {
 
 	for output := range rop.MassDoubleMap(ctx,
 		rop.MassValidate(ctx, inputs, allSuccess[int], CancelF[int], "error"),
-		successConvertIntToStr, failConvertIntToStrProcessError, CancelRopF[int]) {
+		successConvertIntToStr, failConvertIntToStrProcessError,
+		cancelConvertIntToStrProcessError, CancelRopF[int]) {
 
 		assert.True(t, output.IsSuccess())
 		assert.Equal(t, reflect.TypeOf(output.Result()).Kind(), reflect.String)
@@ -275,7 +276,8 @@ func Test_MassDoubleMap_Fail(t *testing.T) {
 
 	for output := range rop.MassDoubleMap(ctx,
 		rop.MassValidate(ctx, inputs, allFail[int], CancelF[int], "error"),
-		successConvertIntToStr, failConvertIntToStrProcessError, CancelRopF[int]) {
+		successConvertIntToStr, failConvertIntToStrProcessError, cancelConvertIntToStrProcessError,
+		CancelRopF[int]) {
 
 		assert.False(t, output.IsSuccess())
 		assert.NotEmpty(t, output.Err())
@@ -397,6 +399,10 @@ func failConvertIntToStr(r int) string {
 
 func failConvertIntToStrProcessError(err error) string {
 	return "error"
+}
+
+func cancelConvertIntToStrProcessError(err error) string {
+	return "cancelled before"
 }
 
 // helpers

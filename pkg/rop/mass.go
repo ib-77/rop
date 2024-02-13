@@ -121,7 +121,8 @@ func MassTee[T any](ctx context.Context, inputs <-chan Rop[T],
 }
 
 func MassDoubleMap[In any, Out any](ctx context.Context, inputs <-chan Rop[In],
-	successF func(r In) Out, failF func(err error) Out, cancelF func(r Rop[In]) error) <-chan Rop[Out] {
+	successF func(r In) Out, failF func(err error) Out, cancelF func(err error) Out,
+	massCancelF func(r Rop[In]) error) <-chan Rop[Out] {
 
 	out := make(chan Rop[Out])
 
@@ -132,11 +133,11 @@ func MassDoubleMap[In any, Out any](ctx context.Context, inputs <-chan Rop[In],
 
 			select {
 			case <-ctx.Done():
-				out <- CancelWith[In, Out](in, cancelF) // cancel current !!!
-				MassCancelWith(inputs, out, cancelF)
+				out <- CancelWith[In, Out](in, massCancelF) // cancel current !!!
+				MassCancelWith(inputs, out, massCancelF)
 				return
 			default:
-				out <- DoubleMap(in, successF, failF)
+				out <- DoubleMap(in, successF, failF, cancelF)
 			}
 		}
 	}(ctx, inputs)

@@ -22,7 +22,7 @@ func RopCase01(input int) string {
 						equalHundredOrThrowError),
 					doAndForget),
 				addChars),
-			logSuccess, logFail),
+			logSuccess, logFail, logCancel),
 		returnSuccessResult, returnFailResult)
 }
 
@@ -41,7 +41,7 @@ func MassRopCase01(ctx context.Context, inputs <-chan int) <-chan string {
 						equalHundredOrThrowError, cancelRopF[int]),
 					doAndForget, cancelRopF[string]),
 				addChars, cancelRopF[string]),
-			logSuccess, logFail, cancelRopF[string]),
+			logSuccess, logFail, logCancel, cancelRopF[string]),
 		returnSuccessResult, returnFailResult, cancelResultF[string])
 }
 
@@ -98,6 +98,11 @@ func logSuccess(r string) string {
 
 func logFail(er error) string {
 	fmt.Printf("error: %s\n", er.Error())
+	return er.Error()
+}
+
+func logCancel(er error) string {
+	fmt.Printf("cancel: %s\n", er.Error())
 	return er.Error()
 }
 

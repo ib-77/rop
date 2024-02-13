@@ -93,13 +93,17 @@ func TeeWithError[T any](input Rop[T], deadEndF func(r Rop[T]) error) Rop[T] {
 }
 
 func DoubleMap[In any, Out any](input Rop[In], successF func(r In) Out,
-	failF func(err error) Out) Rop[Out] {
+	failF func(err error) Out, cancelF func(err error) Out) Rop[Out] {
 
 	if input.IsSuccess() {
 		return Success(successF(input.Result()))
 	}
 
-	failF(input.Err())
+	if input.IsCancel() {
+		cancelF(input.Err())
+	} else {
+		failF(input.Err())
+	}
 
 	if input.IsCancel() {
 		return Cancel[Out](input.Err())

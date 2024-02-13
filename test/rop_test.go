@@ -148,9 +148,12 @@ func Test_OnBothMap_Success(t *testing.T) {
 	input := rop.Success(value)
 	result := rop.DoubleMap(input, func(a int) string {
 		return strconv.Itoa(a)
-	}, func(e error) string {
-		return e.Error()
-	})
+	},
+		func(e error) string {
+			return e.Error()
+		}, func(e error) string {
+			return e.Error()
+		})
 
 	assert.True(t, result.IsSuccess())
 	assert.False(t, result.IsCancel())
@@ -163,6 +166,9 @@ func Test_OnBothMap_Fail(t *testing.T) {
 	errMsg := "erroo"
 	result := rop.DoubleMap(input, func(a int) string {
 		return strconv.Itoa(a)
+	}, func(e error) string {
+		errMsg += e.Error()
+		return e.Error()
 	}, func(e error) string {
 		errMsg += e.Error()
 		return e.Error()
