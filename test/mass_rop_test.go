@@ -16,6 +16,8 @@ func init() {
 }
 
 func Test_MassValidate_True_UnbufferedInput(t *testing.T) {
+	t.Parallel()
+
 	totalElements := 5
 	ctx := context.Background()
 	inputs := generateUnbufferedChan(totalElements)
@@ -29,6 +31,8 @@ func Test_MassValidate_True_UnbufferedInput(t *testing.T) {
 }
 
 func Test_MassValidate_True_BufferedInput(t *testing.T) {
+	t.Parallel()
+
 	totalElements := 5
 	ctx := context.Background()
 	inputs := generateBufferedChan(totalElements, totalElements)
@@ -41,7 +45,25 @@ func Test_MassValidate_True_BufferedInput(t *testing.T) {
 	assert.Equal(t, totalElements, count)
 }
 
+func Test_MassValidate_True_BufferedInput_CloseInput(t *testing.T) {
+	t.Parallel()
+
+	totalElements := 5
+	closeOn := 2
+	ctx := context.Background()
+	inputs := generateBufferedChanCloseOn(totalElements, totalElements, closeOn)
+	count := 0
+
+	for output := range rop.MassValidate(ctx, inputs, allSuccess[int], CancelF[int], "error") {
+		assert.True(t, output.IsSuccess())
+		count++
+	}
+	assert.Equal(t, closeOn, count)
+}
+
 func Test_MassValidate_False(t *testing.T) {
+	t.Parallel()
+
 	totalElements := 5
 	ctx := context.Background()
 	inputs := generateUnbufferedChan(totalElements)
@@ -55,6 +77,8 @@ func Test_MassValidate_False(t *testing.T) {
 }
 
 func Test_MassValidate_WithCancel(t *testing.T) {
+	t.Parallel()
+
 	totalElements := 5
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
@@ -81,6 +105,8 @@ func Test_MassValidate_WithCancel(t *testing.T) {
 }
 
 func Test_MassValidateAndValidate_True(t *testing.T) {
+	t.Parallel()
+
 	totalElements := 5
 	ctx := context.Background()
 	inputs := generateUnbufferedChan(totalElements)
@@ -96,6 +122,8 @@ func Test_MassValidateAndValidate_True(t *testing.T) {
 }
 
 func Test_MassValidateAndValidate_False_AtFirst(t *testing.T) {
+	t.Parallel()
+
 	totalElements := 5
 	ctx := context.Background()
 	inputs := generateUnbufferedChan(totalElements)
@@ -111,6 +139,8 @@ func Test_MassValidateAndValidate_False_AtFirst(t *testing.T) {
 }
 
 func Test_MassValidate_AndValidate_False_AtSecond(t *testing.T) {
+	t.Parallel()
+
 	totalElements := 5
 	ctx := context.Background()
 	inputs := generateUnbufferedChan(totalElements)
@@ -127,6 +157,8 @@ func Test_MassValidate_AndValidate_False_AtSecond(t *testing.T) {
 }
 
 func Test_MassValidate_AndValidate_WithCancel(t *testing.T) {
+	t.Parallel()
+
 	totalElements := 5
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
@@ -148,6 +180,8 @@ func Test_MassValidate_AndValidate_WithCancel(t *testing.T) {
 }
 
 func Test_MassSwitch_Success(t *testing.T) {
+	t.Parallel()
+
 	totalElements := 5
 	ctx := context.Background()
 	inputs := generateUnbufferedChan(totalElements)
@@ -165,6 +199,8 @@ func Test_MassSwitch_Success(t *testing.T) {
 }
 
 func Test_MassSwitch_Fail(t *testing.T) {
+	t.Parallel()
+
 	totalElements := 5
 	ctx := context.Background()
 	inputs := generateUnbufferedChan(totalElements)
@@ -182,6 +218,8 @@ func Test_MassSwitch_Fail(t *testing.T) {
 }
 
 func Test_MassMap_Success(t *testing.T) {
+	t.Parallel()
+
 	totalElements := 5
 	ctx := context.Background()
 	inputs := generateUnbufferedChan(totalElements)
@@ -199,6 +237,8 @@ func Test_MassMap_Success(t *testing.T) {
 }
 
 func Test_MassMap_Fail(t *testing.T) {
+	t.Parallel()
+
 	totalElements := 5
 	ctx := context.Background()
 	inputs := generateUnbufferedChan(totalElements)
@@ -216,6 +256,8 @@ func Test_MassMap_Fail(t *testing.T) {
 }
 
 func Test_MassTry_Success(t *testing.T) {
+	t.Parallel()
+
 	totalElements := 5
 	ctx := context.Background()
 	inputs := generateUnbufferedChan(totalElements)
@@ -233,6 +275,8 @@ func Test_MassTry_Success(t *testing.T) {
 }
 
 func Test_MassTry_Fail(t *testing.T) {
+	t.Parallel()
+
 	totalElements := 5
 	ctx := context.Background()
 	inputs := generateUnbufferedChan(totalElements)
@@ -251,6 +295,8 @@ func Test_MassTry_Fail(t *testing.T) {
 }
 
 func Test_MassDoubleMap_Success(t *testing.T) {
+	t.Parallel()
+
 	totalElements := 5
 	ctx := context.Background()
 	inputs := generateUnbufferedChan(totalElements)
@@ -269,6 +315,8 @@ func Test_MassDoubleMap_Success(t *testing.T) {
 }
 
 func Test_MassDoubleMap_Fail(t *testing.T) {
+	t.Parallel()
+
 	totalElements := 5
 	ctx := context.Background()
 	inputs := generateUnbufferedChan(totalElements)
@@ -287,6 +335,8 @@ func Test_MassDoubleMap_Fail(t *testing.T) {
 }
 
 func Test_MassFinally_Success(t *testing.T) {
+	t.Parallel()
+
 	totalElements := 5
 	ctx := context.Background()
 	inputs := generateUnbufferedChan(totalElements)
@@ -304,6 +354,8 @@ func Test_MassFinally_Success(t *testing.T) {
 }
 
 func Test_MassFinally_Fail(t *testing.T) {
+	t.Parallel()
+
 	totalElements := 5
 	ctx := context.Background()
 	inputs := generateUnbufferedChan(totalElements)
@@ -321,6 +373,8 @@ func Test_MassFinally_Fail(t *testing.T) {
 }
 
 func Test_MassCase01_Success(t *testing.T) {
+	t.Parallel()
+
 	totalElements := 5
 	ctx := context.Background()
 	inputs := generateFixedValueUnbufferedChan(totalElements, 1)
@@ -337,6 +391,8 @@ func Test_MassCase01_Success(t *testing.T) {
 }
 
 func Test_MassCase01_Fail(t *testing.T) {
+	t.Parallel()
+
 	totalElements := 5
 	ctx := context.Background()
 	inputs := generateFixedValueUnbufferedChan(totalElements, 3)
@@ -353,6 +409,8 @@ func Test_MassCase01_Fail(t *testing.T) {
 }
 
 func Test_MassCase01_FailZero(t *testing.T) {
+	t.Parallel()
+
 	totalElements := 5
 	ctx := context.Background()
 	inputs := generateFixedValueUnbufferedChan(totalElements, 0)
@@ -433,6 +491,28 @@ func generateBufferedChan(amount int, bufferSize int) chan int {
 	defer close(inputs)
 
 	for i := 0; i < amount; i++ {
+		inputs <- i
+	}
+
+	return inputs
+}
+
+func generateBufferedChanCloseOn(amount int, bufferSize int, closeOn int) chan int {
+	inputs := make(chan int, bufferSize)
+	closed := &struct{}{}
+	defer func() {
+		if closed != nil {
+			close(inputs)
+		}
+	}()
+
+	for i := 0; i < amount; i++ {
+
+		if i == closeOn {
+			close(inputs)
+			closed = nil
+			break
+		}
 		inputs <- i
 	}
 
