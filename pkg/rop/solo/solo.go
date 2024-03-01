@@ -5,7 +5,7 @@ import (
 	"github.com/ib-77/rop/pkg/rop"
 )
 
-func Validate[T any](input T, validateF func(in T) bool, errMsg string) rop.Rop[T] {
+func Validate[T any](input T, validateF func(in T) bool, errMsg string) rop.Result[T] {
 	if validateF(input) {
 		return rop.Success(input)
 	} else {
@@ -13,7 +13,7 @@ func Validate[T any](input T, validateF func(in T) bool, errMsg string) rop.Rop[
 	}
 }
 
-func ValidateCancel[T any](input T, validateF func(in T) bool, cancelMsg string) rop.Rop[T] {
+func ValidateCancel[T any](input T, validateF func(in T) bool, cancelMsg string) rop.Result[T] {
 	if validateF(input) {
 		return rop.Success(input)
 	} else {
@@ -21,7 +21,7 @@ func ValidateCancel[T any](input T, validateF func(in T) bool, cancelMsg string)
 	}
 }
 
-func AndValidate[T any](input rop.Rop[T], validateF func(in T) bool, errMsg string) rop.Rop[T] {
+func AndValidate[T any](input rop.Result[T], validateF func(in T) bool, errMsg string) rop.Result[T] {
 	if input.IsSuccess() {
 
 		if validateF(input.Result()) {
@@ -33,7 +33,7 @@ func AndValidate[T any](input rop.Rop[T], validateF func(in T) bool, errMsg stri
 	return input
 }
 
-func AndValidateCancel[T any](input rop.Rop[T], validateF func(in T) bool, cancelMsg string) rop.Rop[T] {
+func AndValidateCancel[T any](input rop.Result[T], validateF func(in T) bool, cancelMsg string) rop.Result[T] {
 	if input.IsSuccess() {
 
 		if validateF(input.Result()) {
@@ -45,7 +45,7 @@ func AndValidateCancel[T any](input rop.Rop[T], validateF func(in T) bool, cance
 	return input
 }
 
-func Switch[In any, Out any](input rop.Rop[In], switchF func(r In) rop.Rop[Out]) rop.Rop[Out] {
+func Switch[In any, Out any](input rop.Result[In], switchF func(r In) rop.Result[Out]) rop.Result[Out] {
 
 	if input.IsSuccess() {
 		return switchF(input.Result())
@@ -58,7 +58,7 @@ func Switch[In any, Out any](input rop.Rop[In], switchF func(r In) rop.Rop[Out])
 	}
 }
 
-func Map[In any, Out any](input rop.Rop[In], mapF func(r In) Out) rop.Rop[Out] {
+func Map[In any, Out any](input rop.Result[In], mapF func(r In) Out) rop.Result[Out] {
 
 	if input.IsSuccess() {
 		return rop.Success(mapF(input.Result()))
@@ -71,7 +71,7 @@ func Map[In any, Out any](input rop.Rop[In], mapF func(r In) Out) rop.Rop[Out] {
 	}
 }
 
-func Tee[T any](input rop.Rop[T], deadEndF func(r rop.Rop[T])) rop.Rop[T] {
+func Tee[T any](input rop.Result[T], deadEndF func(r rop.Result[T])) rop.Result[T] {
 
 	if input.IsSuccess() {
 		deadEndF(input)
@@ -81,7 +81,7 @@ func Tee[T any](input rop.Rop[T], deadEndF func(r rop.Rop[T])) rop.Rop[T] {
 }
 
 // TeeWithError TODO unit test
-func TeeWithError[T any](input rop.Rop[T], deadEndF func(r rop.Rop[T]) error) rop.Rop[T] {
+func TeeWithError[T any](input rop.Result[T], deadEndF func(r rop.Result[T]) error) rop.Result[T] {
 
 	if input.IsSuccess() {
 		err := deadEndF(input)
@@ -93,8 +93,8 @@ func TeeWithError[T any](input rop.Rop[T], deadEndF func(r rop.Rop[T]) error) ro
 	return input
 }
 
-func DoubleMap[In any, Out any](input rop.Rop[In], successF func(r In) Out,
-	failF func(err error) Out, cancelF func(err error) Out) rop.Rop[Out] {
+func DoubleMap[In any, Out any](input rop.Result[In], successF func(r In) Out,
+	failF func(err error) Out, cancelF func(err error) Out) rop.Result[Out] {
 
 	if input.IsSuccess() {
 		return rop.Success(successF(input.Result()))
@@ -113,7 +113,7 @@ func DoubleMap[In any, Out any](input rop.Rop[In], successF func(r In) Out,
 	}
 }
 
-func Try[In any, Out any](input rop.Rop[In], withErrF func(r In) (Out, error)) rop.Rop[Out] {
+func Try[In any, Out any](input rop.Result[In], withErrF func(r In) (Out, error)) rop.Result[Out] {
 	if input.IsSuccess() {
 
 		out, err := withErrF(input.Result())
@@ -132,7 +132,7 @@ func Try[In any, Out any](input rop.Rop[In], withErrF func(r In) (Out, error)) r
 }
 
 // Check TODO unit test
-func Check[In any](input rop.Rop[In], boolF func(r In) bool, falseErrMsg string) rop.Rop[bool] {
+func Check[In any](input rop.Result[In], boolF func(r In) bool, falseErrMsg string) rop.Result[bool] {
 
 	if input.IsSuccess() {
 
@@ -151,7 +151,7 @@ func Check[In any](input rop.Rop[In], boolF func(r In) bool, falseErrMsg string)
 }
 
 // CheckCancel TODO unit test
-func CheckCancel[In any](input rop.Rop[In], boolF func(r In) bool, falseCancelMsg string) rop.Rop[bool] {
+func CheckCancel[In any](input rop.Result[In], boolF func(r In) bool, falseCancelMsg string) rop.Result[bool] {
 
 	if input.IsSuccess() {
 
@@ -169,7 +169,7 @@ func CheckCancel[In any](input rop.Rop[In], boolF func(r In) bool, falseCancelMs
 	}
 }
 
-func Finally[Out, In any](input rop.Rop[In], successF func(r In) Out,
+func Finally[Out, In any](input rop.Result[In], successF func(r In) Out,
 	failOrCancelF func(err error) Out) Out {
 	if input.IsSuccess() {
 		return successF(input.Result())
@@ -178,14 +178,14 @@ func Finally[Out, In any](input rop.Rop[In], successF func(r In) Out,
 	}
 }
 
-func SucceedWith[In any, Out any](input rop.Rop[In], successF func(r In) Out) rop.Rop[Out] {
+func SucceedWith[In any, Out any](input rop.Result[In], successF func(r In) Out) rop.Result[Out] {
 	return rop.Success(successF(input.Result()))
 }
 
-func FailWith[In any, Out any](input rop.Rop[In], failF func(r rop.Rop[In]) error) rop.Rop[Out] {
+func FailWith[In any, Out any](input rop.Result[In], failF func(r rop.Result[In]) error) rop.Result[Out] {
 	return rop.Fail[Out](failF(input))
 }
 
-func CancelWith[In any, Out any](input rop.Rop[In], cancelF func(r rop.Rop[In]) error) rop.Rop[Out] { // cancelF out
+func CancelWith[In any, Out any](input rop.Result[In], cancelF func(r rop.Result[In]) error) rop.Result[Out] { // cancelF out
 	return rop.Cancel[Out](cancelF(input))
 }

@@ -51,10 +51,10 @@ func cancelF[T any](in T) error {
 	return errors.New("some error")
 }
 
-func cancelRopF[T any](in rop.Rop[T]) error {
+func cancelRopF[T any](in rop.Result[T]) error {
 	return errors.New("some error")
 }
-func cancelResultF[T any](in rop.Rop[T]) string {
+func cancelResultF[T any](in rop.Result[T]) string {
 	return "some error"
 }
 func lessTwo(a int) bool {
@@ -71,7 +71,7 @@ func notFive(a int) bool {
 	return false
 }
 
-func greaterThanZero(a int) rop.Rop[int] {
+func greaterThanZero(a int) rop.Result[int] {
 	if a > 0 {
 		return rop.Success(100)
 	}
@@ -89,7 +89,7 @@ func equalHundredOrThrowError(r int) (string, error) {
 	return "ER", errors.New("! 100")
 }
 
-func doAndForget(r rop.Rop[string]) {
+func doAndForget(r rop.Result[string]) {
 	fmt.Printf("do something with 100!\n")
 }
 

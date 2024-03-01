@@ -428,7 +428,7 @@ func Test_MassCase01_FailZero(t *testing.T) {
 	assert.Equal(t, totalElements, count)
 }
 
-func successConvertIntToStrResult(r int) rop.Rop[string] {
+func successConvertIntToStrResult(r int) rop.Result[string] {
 	return rop.Success(strconv.Itoa(r))
 }
 
@@ -449,7 +449,7 @@ func failConvertIntToStrWithErr(r int) (re string, err error) {
 	return
 }
 
-func failConvertIntToStrResult(r int) rop.Rop[string] {
+func failConvertIntToStrResult(r int) rop.Result[string] {
 	return rop.Fail[string](fmt.Errorf("cannot convert %d", r))
 }
 
@@ -533,10 +533,10 @@ func CancelF[T any](in T) error {
 	return fmt.Errorf("---- processing of value %v was cancelled", in)
 }
 
-func CancelRopF[T any](in rop.Rop[T]) error {
+func CancelRopF[T any](in rop.Result[T]) error {
 	return fmt.Errorf("---- processing of value %v was cancelled", in)
 }
 
-func CancelStrF[In any](in rop.Rop[In]) string {
+func CancelStrF[In any](in rop.Result[In]) string {
 	return fmt.Sprintf("---- processing of value %v was cancelled", in)
 }

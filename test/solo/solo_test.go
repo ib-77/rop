@@ -72,7 +72,7 @@ func Test_OnSuccessSwitch_StaySuccess(t *testing.T) {
 	value := 100
 	okValue := "ok"
 	input := rop.Success(value)
-	result := solo.Switch(input, func(a int) rop.Rop[string] {
+	result := solo.Switch(input, func(a int) rop.Result[string] {
 		if a == value {
 			return rop.Success(okValue)
 		}
@@ -91,7 +91,7 @@ func Test_OnSuccessSwitch_StayFail(t *testing.T) {
 	value := 100
 	okValue := "ok"
 	input := rop.Success(value)
-	result := solo.Switch(input, func(a int) rop.Rop[string] {
+	result := solo.Switch(input, func(a int) rop.Result[string] {
 		if a != value {
 			return rop.Success(okValue)
 		}
@@ -111,7 +111,7 @@ func Test_OnSuccessSwitch_Fail(t *testing.T) {
 	value := 100
 	okValue := "ok"
 	input := rop.Fail[int](errors.New("fail2"))
-	result := solo.Switch(input, func(a int) rop.Rop[string] {
+	result := solo.Switch(input, func(a int) rop.Result[string] {
 		if a != value {
 			return rop.Success(okValue)
 		}
@@ -165,7 +165,7 @@ func Test_OnSuccessDo_Fail(t *testing.T) {
 	t.Parallel()
 
 	input := rop.Fail[Value](errors.New("fail4"))
-	result := solo.Tee(input, func(a rop.Rop[Value]) {
+	result := solo.Tee(input, func(a rop.Result[Value]) {
 		// any
 	})
 
