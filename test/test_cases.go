@@ -5,17 +5,19 @@ import (
 	"errors"
 	"fmt"
 	"github.com/ib-77/rop/pkg/rop"
+	"github.com/ib-77/rop/pkg/rop/mass"
+	"github.com/ib-77/rop/pkg/rop/solo"
 )
 
 func RopCase01(input int) string {
-	return rop.Finally(
-		rop.DoubleMap(
-			rop.Map(
-				rop.Tee(
-					rop.Try(
-						rop.Switch(
-							rop.AndValidate(
-								rop.Validate(input,
+	return solo.Finally(
+		solo.DoubleMap(
+			solo.Map(
+				solo.Tee(
+					solo.Try(
+						solo.Switch(
+							solo.AndValidate(
+								solo.Validate(input,
 									lessTwo, "value more than 2"),
 								notFive, "value is 5"),
 							greaterThanZero),
@@ -27,14 +29,14 @@ func RopCase01(input int) string {
 }
 
 func MassRopCase01(ctx context.Context, inputs <-chan int) <-chan string {
-	return rop.MassFinally(ctx,
-		rop.MassDoubleMap(ctx,
-			rop.MassMap(ctx,
-				rop.MassTee(ctx,
-					rop.MassTry(ctx,
-						rop.MassSwitch(ctx,
-							rop.MassAndValidate(ctx,
-								rop.MassValidate(ctx, inputs,
+	return mass.Finally(ctx,
+		mass.DoubleMap(ctx,
+			mass.Map(ctx,
+				mass.Tee(ctx,
+					mass.Try(ctx,
+						mass.Switch(ctx,
+							mass.AndValidate(ctx,
+								mass.Validate(ctx, inputs,
 									lessTwo, cancelF[int], "value more than 2"),
 								notFive, cancelRopF[int], "value is 5"),
 							greaterThanZero, cancelRopF[int]),
@@ -49,10 +51,10 @@ func cancelF[T any](in T) error {
 	return errors.New("some error")
 }
 
-func cancelRopF[T any](in rop.Rop[T]) error {
+func cancelRopF[T any](in rop.Result[T]) error {
 	return errors.New("some error")
 }
-func cancelResultF[T any](in rop.Rop[T]) string {
+func cancelResultF[T any](in rop.Result[T]) string {
 	return "some error"
 }
 func lessTwo(a int) bool {
@@ -69,7 +71,7 @@ func notFive(a int) bool {
 	return false
 }
 
-func greaterThanZero(a int) rop.Rop[int] {
+func greaterThanZero(a int) rop.Result[int] {
 	if a > 0 {
 		return rop.Success(100)
 	}
@@ -87,7 +89,7 @@ func equalHundredOrThrowError(r int) (string, error) {
 	return "ER", errors.New("! 100")
 }
 
-func doAndForget(r rop.Rop[string]) {
+func doAndForget(r rop.Result[string]) {
 	fmt.Printf("do something with 100!\n")
 }
 

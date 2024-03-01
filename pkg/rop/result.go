@@ -1,21 +1,14 @@
 package rop
 
-type Rop[T any] interface {
-	Result() T
-	Err() error
-	IsSuccess() bool
-	IsCancel() bool
-}
-
-type ropResult[T any] struct {
+type Result[T any] struct {
 	result    T
 	err       error
 	isSuccess bool
 	isCancel  bool
 }
 
-func Success[T any](r T) Rop[T] {
-	return ropResult[T]{
+func Success[T any](r T) Result[T] {
+	return Result[T]{
 		result:    r,
 		err:       nil,
 		isSuccess: true,
@@ -23,34 +16,34 @@ func Success[T any](r T) Rop[T] {
 	}
 }
 
-func Fail[T any](err error) Rop[T] {
-	return ropResult[T]{
+func Fail[T any](err error) Result[T] {
+	return Result[T]{
 		err:       err,
 		isSuccess: false,
 		isCancel:  false,
 	}
 }
 
-func Cancel[T any](err error) Rop[T] {
-	return ropResult[T]{
+func Cancel[T any](err error) Result[T] {
+	return Result[T]{
 		err:       err,
 		isSuccess: false,
 		isCancel:  true,
 	}
 }
 
-func (r ropResult[T]) Result() T {
+func (r Result[T]) Result() T {
 	return r.result
 }
 
-func (r ropResult[T]) Err() error {
+func (r Result[T]) Err() error {
 	return r.err
 }
 
-func (r ropResult[T]) IsSuccess() bool {
+func (r Result[T]) IsSuccess() bool {
 	return r.isSuccess
 }
 
-func (r ropResult[T]) IsCancel() bool {
+func (r Result[T]) IsCancel() bool {
 	return r.isCancel
 }
