@@ -1,8 +1,10 @@
-package test
+package solo
 
 import (
 	"errors"
 	"github.com/ib-77/rop/pkg/rop"
+	"github.com/ib-77/rop/pkg/rop/solo"
+	"github.com/ib-77/rop/test"
 	"github.com/stretchr/testify/assert"
 	"os"
 	"strconv"
@@ -32,7 +34,7 @@ func Test_ValidateTrue(t *testing.T) {
 	t.Parallel()
 
 	value := 1
-	result := rop.Validate(value, func(a int) bool {
+	result := solo.Validate(value, func(a int) bool {
 		if a < 2 {
 			return true
 		}
@@ -50,7 +52,7 @@ func Test_ValidateFalse(t *testing.T) {
 
 	value := 7
 	errMsg := "value more than 2"
-	result := rop.Validate(value, func(a int) bool {
+	result := solo.Validate(value, func(a int) bool {
 		if a < 2 {
 			return true
 		}
@@ -70,7 +72,7 @@ func Test_OnSuccessSwitch_StaySuccess(t *testing.T) {
 	value := 100
 	okValue := "ok"
 	input := rop.Success(value)
-	result := rop.Switch(input, func(a int) rop.Rop[string] {
+	result := solo.Switch(input, func(a int) rop.Rop[string] {
 		if a == value {
 			return rop.Success(okValue)
 		}
@@ -89,7 +91,7 @@ func Test_OnSuccessSwitch_StayFail(t *testing.T) {
 	value := 100
 	okValue := "ok"
 	input := rop.Success(value)
-	result := rop.Switch(input, func(a int) rop.Rop[string] {
+	result := solo.Switch(input, func(a int) rop.Rop[string] {
 		if a != value {
 			return rop.Success(okValue)
 		}
@@ -109,7 +111,7 @@ func Test_OnSuccessSwitch_Fail(t *testing.T) {
 	value := 100
 	okValue := "ok"
 	input := rop.Fail[int](errors.New("fail2"))
-	result := rop.Switch(input, func(a int) rop.Rop[string] {
+	result := solo.Switch(input, func(a int) rop.Rop[string] {
 		if a != value {
 			return rop.Success(okValue)
 		}
@@ -129,7 +131,7 @@ func Test_OnSuccessMap_StaySuccess(t *testing.T) {
 	value := 100
 	okValue := "ok"
 	input := rop.Success(value)
-	result := rop.Map(input, func(a int) string {
+	result := solo.Map(input, func(a int) string {
 		return okValue
 	})
 
@@ -144,7 +146,7 @@ func Test_OnSuccessMap_StayFail(t *testing.T) {
 
 	okValue := "ok"
 	input := rop.Fail[int](errors.New("fail3"))
-	result := rop.Map(input, func(a int) string {
+	result := solo.Map(input, func(a int) string {
 		return okValue
 	})
 
@@ -163,7 +165,7 @@ func Test_OnSuccessDo_Fail(t *testing.T) {
 	t.Parallel()
 
 	input := rop.Fail[Value](errors.New("fail4"))
-	result := rop.Tee(input, func(a rop.Rop[Value]) {
+	result := solo.Tee(input, func(a rop.Rop[Value]) {
 		// any
 	})
 
@@ -179,7 +181,7 @@ func Test_OnBothMap_Success(t *testing.T) {
 
 	value := 100
 	input := rop.Success(value)
-	result := rop.DoubleMap(input, func(a int) string {
+	result := solo.DoubleMap(input, func(a int) string {
 		return strconv.Itoa(a)
 	},
 		func(e error) string {
@@ -199,7 +201,7 @@ func Test_OnBothMap_Fail(t *testing.T) {
 
 	input := rop.Fail[int](errors.New("fails"))
 	errMsg := "erroo"
-	result := rop.DoubleMap(input, func(a int) string {
+	result := solo.DoubleMap(input, func(a int) string {
 		return strconv.Itoa(a)
 	}, func(e error) string {
 		errMsg += e.Error()
@@ -221,21 +223,21 @@ func TestCase01(t *testing.T) {
 	t.Run("success", func(t *testing.T) {
 		t.Parallel()
 
-		result := RopCase01(1)
+		result := test.RopCase01(1)
 		assert.Equal(t, result, "all ok")
 	})
 
 	t.Run("fail at start", func(t *testing.T) {
 		t.Parallel()
 
-		result := RopCase01(3)
+		result := test.RopCase01(3)
 		assert.Equal(t, result, "error: value more than 2")
 	})
 
 	t.Run("fail zero", func(t *testing.T) {
 		t.Parallel()
 
-		result := RopCase01(0)
+		result := test.RopCase01(0)
 		assert.Equal(t, result, "error: a is less or 0!")
 	})
 }
