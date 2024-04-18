@@ -205,6 +205,15 @@ func Finally[Out, In any](input rop.Result[In], successF func(r In) Out,
 	}
 }
 
+func FinallyWithErr[Out, In any](input rop.Result[In], successF func(r In) (Out, error),
+	failOrCancelF func(err error) (Out, error)) (Out, error) {
+	if input.IsSuccess() {
+		return successF(input.Result())
+	} else {
+		return failOrCancelF(input.Err())
+	}
+}
+
 func SucceedWith[In any, Out any](input rop.Result[In], successF func(r In) Out) rop.Result[Out] {
 	return rop.Success(successF(input.Result()))
 }
