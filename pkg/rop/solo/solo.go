@@ -13,11 +13,27 @@ func Validate[T any](input T, validateF func(in T) bool, errMsg string) rop.Resu
 	}
 }
 
+func ValidateWithErr[T any](input T, validateF func(in T) (bool, error)) rop.Result[T] {
+	if ok, err := validateF(input); ok {
+		return rop.Success(input)
+	} else {
+		return rop.Fail[T](err)
+	}
+}
+
 func ValidateCancel[T any](input T, validateF func(in T) bool, cancelMsg string) rop.Result[T] {
 	if validateF(input) {
 		return rop.Success(input)
 	} else {
 		return rop.Cancel[T](errors.New(cancelMsg))
+	}
+}
+
+func ValidateCancelWithErr[T any](input T, validateF func(in T) (bool, error)) rop.Result[T] {
+	if ok, cancelErr := validateF(input); ok {
+		return rop.Success(input)
+	} else {
+		return rop.Cancel[T](cancelErr)
 	}
 }
 
@@ -33,13 +49,24 @@ func AndValidate[T any](input rop.Result[T], validateF func(in T) bool, errMsg s
 	return input
 }
 
-func AndValidateCancel[T any](input rop.Result[T], validateF func(in T) bool, cancelMsg string) rop.Result[T] {
+func AndValidateWithErr[T any](input rop.Result[T], validateF func(in T) (bool, error)) rop.Result[T] {
 	if input.IsSuccess() {
 
-		if validateF(input.Result()) {
+		if ok, err := validateF(input.Result()); ok {
 			return rop.Success(input.Result())
 		} else {
-			return rop.Cancel[T](errors.New(cancelMsg))
+			return rop.Fail[T](err)
+		}
+	}
+	return input
+}
+
+func AndValidateCancelWithErr[T any](input rop.Result[T], validateF func(in T) (bool, error)) rop.Result[T] {
+	if input.IsSuccess() {
+		if ok, cancelErr := validateF(input.Result()); ok {
+			return rop.Success(input.Result())
+		} else {
+			return rop.Cancel[T](cancelErr)
 		}
 	}
 	return input

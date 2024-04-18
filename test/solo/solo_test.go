@@ -242,6 +242,30 @@ func TestCase01(t *testing.T) {
 	})
 }
 
+func TestCase02(t *testing.T) {
+
+	t.Run("success", func(t *testing.T) {
+		t.Parallel()
+
+		result := test.RopCase02(1)
+		assert.Equal(t, result, "all ok")
+	})
+
+	t.Run("fail at start", func(t *testing.T) {
+		t.Parallel()
+
+		result := test.RopCase02(3)
+		assert.Equal(t, result, "error: value more than 2")
+	})
+
+	t.Run("fail zero", func(t *testing.T) {
+		t.Parallel()
+
+		result := test.RopCase02(0)
+		assert.Equal(t, result, "error: a is less or 0!")
+	})
+}
+
 var benchGlobalRes string
 
 func BenchmarkCase01(b *testing.B) {

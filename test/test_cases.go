@@ -28,6 +28,25 @@ func RopCase01(input int) string {
 		returnSuccessResult, returnFailResult)
 }
 
+func RopCase02(input int) string {
+	return solo.Finally(
+		solo.DoubleMap(
+			solo.Map(
+				solo.Tee(
+					solo.Try(
+						solo.Switch(
+							solo.AndValidateWithErr(
+								solo.ValidateWithErr(input,
+									lessTwoErr),
+								notFiveErr),
+							greaterThanZero),
+						equalHundredOrThrowError),
+					doAndForget),
+				addChars),
+			logSuccess, logFail, logCancel),
+		returnSuccessResult, returnFailResult)
+}
+
 func RopBenchCase01(input int) string {
 	return solo.Finally(
 		solo.DoubleMap(
@@ -83,6 +102,20 @@ func lessTwo(a int) bool {
 		return true
 	}
 	return false
+}
+
+func lessTwoErr(a int) (bool, error) {
+	if a < 2 {
+		return true, nil
+	}
+	return false, errors.New("value more than 2")
+}
+
+func notFiveErr(a int) (bool, error) {
+	if a != 5 {
+		return true, nil
+	}
+	return false, errors.New("value is 5")
 }
 
 func notFive(a int) bool {
