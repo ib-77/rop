@@ -1,2 +1,2 @@
 # railway oriented programming (rop)
-current version: v0.3
+current version: v0.3.2
