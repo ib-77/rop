@@ -1,0 +1,2 @@
+cd solo
+go test ./... -bench=^BenchmarkCase01 -benchmem  -benchtime=2s -count=5

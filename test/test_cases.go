@@ -28,6 +28,25 @@ func RopCase01(input int) string {
 		returnSuccessResult, returnFailResult)
 }
 
+func RopBenchCase01(input int) string {
+	return solo.Finally(
+		solo.DoubleMap(
+			solo.Map(
+				solo.Tee(
+					solo.Try(
+						solo.Switch(
+							solo.AndValidate(
+								solo.Validate(input,
+									lessTwo, "value more than 2"),
+								notFive, "value is 5"),
+							greaterThanZero),
+						equalHundredOrThrowError),
+					doAndForgetNoFormat),
+				addChars),
+			logSuccessNoFormat, logFailNoFormat, logCancelNoFormat),
+		returnSuccessResult, returnFailResultNoFormat)
+}
+
 func MassRopCase01(ctx context.Context, inputs <-chan int) <-chan string {
 	return mass.Finally(ctx,
 		mass.DoubleMap(ctx,
@@ -54,9 +73,11 @@ func cancelF[T any](in T) error {
 func cancelRopF[T any](in rop.Result[T]) error {
 	return errors.New("some error")
 }
+
 func cancelResultF[T any](in rop.Result[T]) string {
 	return "some error"
 }
+
 func lessTwo(a int) bool {
 	if a < 2 {
 		return true
@@ -93,8 +114,15 @@ func doAndForget(r rop.Result[string]) {
 	fmt.Printf("do something with 100!\n")
 }
 
+func doAndForgetNoFormat(r rop.Result[string]) {
+}
+
 func logSuccess(r string) string {
 	fmt.Printf("string: %s\n", r)
+	return r
+}
+
+func logSuccessNoFormat(r string) string {
 	return r
 }
 
@@ -103,8 +131,16 @@ func logFail(er error) string {
 	return er.Error()
 }
 
+func logFailNoFormat(er error) string {
+	return er.Error()
+}
+
 func logCancel(er error) string {
 	fmt.Printf("cancel: %s\n", er.Error())
+	return er.Error()
+}
+
+func logCancelNoFormat(er error) string {
 	return er.Error()
 }
 
@@ -114,4 +150,8 @@ func returnSuccessResult(r string) string {
 
 func returnFailResult(er error) string {
 	return fmt.Sprintf("error: %s", er)
+}
+
+func returnFailResultNoFormat(er error) string {
+	return er.Error()
 }

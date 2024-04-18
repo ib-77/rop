@@ -241,3 +241,13 @@ func TestCase01(t *testing.T) {
 		assert.Equal(t, result, "error: a is less or 0!")
 	})
 }
+
+var benchGlobalRes string
+
+func BenchmarkCase01(b *testing.B) {
+
+	for i := 0; i < b.N; i++ {
+		result := test.RopBenchCase01(1)
+		benchGlobalRes = result
+	}
+}
