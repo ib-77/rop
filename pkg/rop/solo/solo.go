@@ -159,11 +159,11 @@ func Tee[T any](input rop.Result[T], deadEndF func(r rop.Result[T])) rop.Result[
 	return input
 }
 
-func DoubleTee[T any](input rop.Result[T], deadEndF func(r rop.Result[T]),
+func DoubleTee[T any](input rop.Result[T], deadEndF func(r T),
 	deadEndWithErrF func(err error)) rop.Result[T] {
 
 	if input.IsSuccess() {
-		deadEndF(input)
+		deadEndF(input.Result())
 	} else {
 		deadEndWithErrF(input.Err())
 	}
