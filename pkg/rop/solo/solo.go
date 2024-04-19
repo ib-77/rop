@@ -1,6 +1,7 @@
 package solo
 
 import (
+	"context"
 	"errors"
 	"github.com/ib-77/rop/pkg/rop"
 )
@@ -15,6 +16,16 @@ func Validate[T any](input T, validateF func(in T) bool, errMsg string) rop.Resu
 
 func ValidateWithErr[T any](input T, validateF func(in T) (bool, error)) rop.Result[T] {
 	if ok, err := validateF(input); ok {
+		return rop.Success(input)
+	} else {
+		return rop.Fail[T](err)
+	}
+}
+
+func ValidateWithCtxWithErr[T any](ctx context.Context, input T,
+	validateF func(ctx context.Context, in T) (bool, error)) rop.Result[T] {
+
+	if ok, err := validateF(ctx, input); ok {
 		return rop.Success(input)
 	} else {
 		return rop.Fail[T](err)
@@ -53,6 +64,19 @@ func AndValidateWithErr[T any](input rop.Result[T], validateF func(in T) (bool, 
 	if input.IsSuccess() {
 
 		if ok, err := validateF(input.Result()); ok {
+			return rop.Success(input.Result())
+		} else {
+			return rop.Fail[T](err)
+		}
+	}
+	return input
+}
+
+func AndValidateWithCtxWithErr[T any](ctx context.Context, input rop.Result[T],
+	validateF func(ctx context.Context, in T) (bool, error)) rop.Result[T] {
+	if input.IsSuccess() {
+
+		if ok, err := validateF(ctx, input.Result()); ok {
 			return rop.Success(input.Result())
 		} else {
 			return rop.Fail[T](err)
