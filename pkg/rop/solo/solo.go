@@ -159,6 +159,18 @@ func Tee[T any](input rop.Result[T], deadEndF func(r rop.Result[T])) rop.Result[
 	return input
 }
 
+func DoubleTee[T any](input rop.Result[T], deadEndF func(r rop.Result[T]),
+	deadEndWithErrF func(err error)) rop.Result[T] {
+
+	if input.IsSuccess() {
+		deadEndF(input)
+	} else {
+		deadEndWithErrF(input.Err())
+	}
+
+	return input
+}
+
 // TeeWithError TODO unit test
 func TeeWithError[T any](input rop.Result[T], deadEndF func(r rop.Result[T]) error) rop.Result[T] {
 
@@ -263,6 +275,16 @@ func FinallyWithErr[Out, In any](input rop.Result[In], successF func(r In) (Out,
 		return successF(input.Result())
 	} else {
 		return failOrCancelF(input.Err())
+	}
+}
+
+func FinallyWithCtxWithErr[Out, In any](ctx context.Context,
+	input rop.Result[In], successF func(ctx context.Context, r In) (Out, error),
+	failOrCancelF func(ctx context.Context, err error) (Out, error)) (Out, error) {
+	if input.IsSuccess() {
+		return successF(ctx, input.Result())
+	} else {
+		return failOrCancelF(ctx, input.Err())
 	}
 }
 
