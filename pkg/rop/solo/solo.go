@@ -109,10 +109,38 @@ func Switch[In any, Out any](input rop.Result[In], switchF func(r In) rop.Result
 	}
 }
 
+func SwitchWithCtx[In any, Out any](ctx context.Context,
+	input rop.Result[In], switchF func(ctx context.Context, r In) rop.Result[Out]) rop.Result[Out] {
+
+	if input.IsSuccess() {
+		return switchF(ctx, input.Result())
+	} else {
+		if input.IsCancel() {
+			return rop.Cancel[Out](input.Err())
+		} else {
+			return rop.Fail[Out](input.Err())
+		}
+	}
+}
+
 func Map[In any, Out any](input rop.Result[In], mapF func(r In) Out) rop.Result[Out] {
 
 	if input.IsSuccess() {
 		return rop.Success(mapF(input.Result()))
+	} else {
+		if input.IsCancel() {
+			return rop.Cancel[Out](input.Err())
+		} else {
+			return rop.Fail[Out](input.Err())
+		}
+	}
+}
+
+func MapWithCtx[In any, Out any](ctx context.Context,
+	input rop.Result[In], mapF func(ctx context.Context, r In) Out) rop.Result[Out] {
+
+	if input.IsSuccess() {
+		return rop.Success(mapF(ctx, input.Result()))
 	} else {
 		if input.IsCancel() {
 			return rop.Cancel[Out](input.Err())
