@@ -7,6 +7,7 @@ import (
 )
 
 func Validate[T any](input T, validateF func(in T) bool, errMsg string) rop.Result[T] {
+
 	if validateF(input) {
 		return rop.Success(input)
 	} else {
@@ -15,6 +16,7 @@ func Validate[T any](input T, validateF func(in T) bool, errMsg string) rop.Resu
 }
 
 func ValidateWithErr[T any](input T, validateF func(in T) (bool, error)) rop.Result[T] {
+
 	if ok, err := validateF(input); ok {
 		return rop.Success(input)
 	} else {
@@ -33,6 +35,7 @@ func ValidateWithCtxWithErr[T any](ctx context.Context, input T,
 }
 
 func ValidateCancel[T any](input T, validateF func(in T) bool, cancelMsg string) rop.Result[T] {
+
 	if validateF(input) {
 		return rop.Success(input)
 	} else {
@@ -41,6 +44,7 @@ func ValidateCancel[T any](input T, validateF func(in T) bool, cancelMsg string)
 }
 
 func ValidateCancelWithErr[T any](input T, validateF func(in T) (bool, error)) rop.Result[T] {
+
 	if ok, cancelErr := validateF(input); ok {
 		return rop.Success(input)
 	} else {
@@ -49,6 +53,7 @@ func ValidateCancelWithErr[T any](input T, validateF func(in T) (bool, error)) r
 }
 
 func AndValidate[T any](input rop.Result[T], validateF func(in T) bool, errMsg string) rop.Result[T] {
+
 	if input.IsSuccess() {
 
 		if validateF(input.Result()) {
@@ -61,6 +66,7 @@ func AndValidate[T any](input rop.Result[T], validateF func(in T) bool, errMsg s
 }
 
 func AndValidateWithErr[T any](input rop.Result[T], validateF func(in T) (bool, error)) rop.Result[T] {
+
 	if input.IsSuccess() {
 
 		if ok, err := validateF(input.Result()); ok {
@@ -74,6 +80,7 @@ func AndValidateWithErr[T any](input rop.Result[T], validateF func(in T) (bool, 
 
 func AndValidateWithCtxWithErr[T any](ctx context.Context, input rop.Result[T],
 	validateF func(ctx context.Context, in T) (bool, error)) rop.Result[T] {
+
 	if input.IsSuccess() {
 
 		if ok, err := validateF(ctx, input.Result()); ok {
@@ -86,6 +93,7 @@ func AndValidateWithCtxWithErr[T any](ctx context.Context, input rop.Result[T],
 }
 
 func AndValidateCancelWithErr[T any](input rop.Result[T], validateF func(in T) (bool, error)) rop.Result[T] {
+
 	if input.IsSuccess() {
 		if ok, cancelErr := validateF(input.Result()); ok {
 			return rop.Success(input.Result())
@@ -159,6 +167,29 @@ func Tee[T any](input rop.Result[T], deadEndF func(r rop.Result[T])) rop.Result[
 	return input
 }
 
+// TeeWithError TODO unit test
+func TeeWithError[T any](input rop.Result[T], deadEndF func(r rop.Result[T]) error) rop.Result[T] {
+
+	if input.IsSuccess() {
+		err := deadEndF(input)
+		if err != nil {
+			return rop.Fail[T](err)
+		}
+	}
+
+	return input
+}
+
+func TeeWithCtx[T any](ctx context.Context, input rop.Result[T],
+	deadEndF func(ctx context.Context, r rop.Result[T])) rop.Result[T] {
+
+	if input.IsSuccess() {
+		deadEndF(ctx, input)
+	}
+
+	return input
+}
+
 // DoubleTee TODO unit test
 func DoubleTee[T any](input rop.Result[T], deadEndF func(r T),
 	deadEndWithErrF func(err error)) rop.Result[T] {
@@ -172,14 +203,14 @@ func DoubleTee[T any](input rop.Result[T], deadEndF func(r T),
 	return input
 }
 
-// TeeWithError TODO unit test
-func TeeWithError[T any](input rop.Result[T], deadEndF func(r rop.Result[T]) error) rop.Result[T] {
+func DoubleTeeWithCtx[T any](ctx context.Context, input rop.Result[T],
+	deadEndF func(ctx context.Context, r T),
+	deadEndWithErrF func(ctx context.Context, err error)) rop.Result[T] {
 
 	if input.IsSuccess() {
-		err := deadEndF(input)
-		if err != nil {
-			return rop.Fail[T](err)
-		}
+		deadEndF(ctx, input.Result())
+	} else {
+		deadEndWithErrF(ctx, input.Err())
 	}
 
 	return input
@@ -205,10 +236,52 @@ func DoubleMap[In any, Out any](input rop.Result[In], successF func(r In) Out,
 	}
 }
 
+func DoubleMapWithCtx[In any, Out any](ctx context.Context, input rop.Result[In],
+	successF func(ctx context.Context, r In) Out, failF func(ctx context.Context, err error) Out,
+	cancelF func(ctx context.Context, err error) Out) rop.Result[Out] {
+
+	if input.IsSuccess() {
+		return rop.Success(successF(ctx, input.Result()))
+	}
+
+	if input.IsCancel() {
+		cancelF(ctx, input.Err())
+	} else {
+		failF(ctx, input.Err())
+	}
+
+	if input.IsCancel() {
+		return rop.Cancel[Out](input.Err())
+	} else {
+		return rop.Fail[Out](input.Err())
+	}
+}
+
 func Try[In any, Out any](input rop.Result[In], withErrF func(r In) (Out, error)) rop.Result[Out] {
+
 	if input.IsSuccess() {
 
 		out, err := withErrF(input.Result())
+		if err != nil {
+			return rop.Fail[Out](err)
+		}
+
+		return rop.Success(out)
+	}
+
+	if input.IsCancel() {
+		return rop.Cancel[Out](input.Err())
+	} else {
+		return rop.Fail[Out](input.Err())
+	}
+}
+
+func TryWithCtx[In any, Out any](ctx context.Context, input rop.Result[In],
+	withErrF func(ctx context.Context, r In) (Out, error)) rop.Result[Out] {
+
+	if input.IsSuccess() {
+
+		out, err := withErrF(ctx, input.Result())
 		if err != nil {
 			return rop.Fail[Out](err)
 		}
