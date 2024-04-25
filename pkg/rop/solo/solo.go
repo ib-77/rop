@@ -343,6 +343,33 @@ func Finally[Out, In any](input rop.Result[In], successF func(r In) Out,
 	}
 }
 
+func FinallyWithCtx[Out, In any](ctx context.Context, input rop.Result[In],
+	successF func(ctx context.Context, r In) Out, failOrCancelF func(ctx context.Context, err error) Out) Out {
+	if input.IsSuccess() {
+		return successF(ctx, input.Result())
+	} else {
+		return failOrCancelF(ctx, input.Err())
+	}
+}
+
+func FinallyTeeWithCtx[In any](ctx context.Context, input rop.Result[In],
+	successF func(ctx context.Context, r In), failOrCancelF func(ctx context.Context, err error)) {
+	if input.IsSuccess() {
+		successF(ctx, input.Result())
+	} else {
+		failOrCancelF(ctx, input.Err())
+	}
+}
+
+func FinallyTeeWithCtxWithErr[In any](ctx context.Context, input rop.Result[In],
+	successF func(ctx context.Context, r In) error, failOrCancelF func(ctx context.Context, err error) error) error {
+	if input.IsSuccess() {
+		return successF(ctx, input.Result())
+	} else {
+		return failOrCancelF(ctx, input.Err())
+	}
+}
+
 func FinallyWithErr[Out, In any](input rop.Result[In], successF func(r In) (Out, error),
 	failOrCancelF func(err error) (Out, error)) (Out, error) {
 	if input.IsSuccess() {
