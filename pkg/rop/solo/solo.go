@@ -3,7 +3,9 @@ package solo
 import (
 	"context"
 	"errors"
+	"fmt"
 	"github.com/ib-77/rop/pkg/rop"
+	"time"
 )
 
 func Validate[T any](input T, validateF func(in T) bool, errMsg string) rop.Result[T] {
@@ -282,6 +284,46 @@ func TryWithCtx[In any, Out any](ctx context.Context, input rop.Result[In],
 	if input.IsSuccess() {
 
 		out, err := withErrF(ctx, input.Result())
+		if err != nil {
+			return rop.Fail[Out](err)
+		}
+
+		return rop.Success(out)
+	}
+
+	if input.IsCancel() {
+		return rop.Cancel[Out](input.Err())
+	} else {
+		return rop.Fail[Out](input.Err())
+	}
+}
+
+func RetryWithCtx[In any, Out any](ctx context.Context, input rop.Result[In],
+	withErrF func(ctx context.Context, r In) (Out, error)) rop.Result[Out] {
+
+	if input.IsSuccess() {
+
+		rs, ok := rop.GetRetryFromCtx(ctx)
+		if !ok {
+			return rop.Fail[Out](fmt.Errorf("RetryWithCtx: context  is not set, use rop.WithRetry"))
+		}
+
+		var attempt int64 = 0
+		var err error
+		var out Out
+		for {
+			out, err = withErrF(ctx, input.Result())
+			if err != nil {
+				attempt++
+				if attempt >= rs.Attempts() {
+					break
+				}
+				time.Sleep(rs.Wait(attempt))
+			} else {
+				break
+			}
+		}
+
 		if err != nil {
 			return rop.Fail[Out](err)
 		}

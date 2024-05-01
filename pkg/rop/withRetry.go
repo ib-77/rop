@@ -20,16 +20,17 @@ func WithRetry(ctx context.Context, strategy RetryStrategy) context.Context {
 	return context.WithValue(ctx, RetryStrategyKey, strategy)
 }
 
-func GetRetryFromCtx(ctx context.Context) RetryStrategy {
-	return ctx.Value(RetryStrategyKey).(RetryStrategy)
+func GetRetryFromCtx(ctx context.Context) (rs RetryStrategy, ok bool) {
+	rs, ok = ctx.Value(RetryStrategyKey).(RetryStrategy)
+	return
 }
 
-func GetRetryFromCtxDef(ctx context.Context, rs RetryStrategy) RetryStrategy {
-	res := ctx.Value(RetryStrategyKey).(RetryStrategy)
-	if res != nil {
-		return res
+func GetRetryFromCtxDef(ctx context.Context, def RetryStrategy) RetryStrategy {
+	rs, ok := ctx.Value(RetryStrategyKey).(RetryStrategy)
+	if ok {
+		return rs
 	}
-	return rs
+	return def
 }
 
 type FixedRetryStrategy struct {

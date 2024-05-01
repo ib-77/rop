@@ -1,6 +1,7 @@
 package solo
 
 import (
+	"context"
 	"errors"
 	"github.com/ib-77/rop/pkg/rop"
 	"github.com/ib-77/rop/pkg/rop/solo"
@@ -9,6 +10,7 @@ import (
 	"os"
 	"strconv"
 	"testing"
+	"time"
 )
 
 func init() {
@@ -194,6 +196,43 @@ func Test_OnBothMap_Success(t *testing.T) {
 	assert.False(t, result.IsCancel())
 	assert.Equal(t, strconv.Itoa(value), result.Result())
 	assert.Nil(t, result.Err())
+}
+
+func Test_Retry_Success(t *testing.T) {
+	t.Parallel()
+
+	value := 100
+	input := rop.Success(value)
+	ctx := rop.WithRetry(context.Background(), rop.NewFixedRetryStrategy(7, time.Second))
+
+	result := solo.RetryWithCtx(ctx, input, throwError)
+
+	assert.True(t, result.IsSuccess())
+	assert.False(t, result.IsCancel())
+	assert.Equal(t, strconv.Itoa(value), result.Result())
+	assert.Nil(t, result.Err())
+}
+
+func Test_Retry_Fail(t *testing.T) {
+	t.Parallel()
+
+	value := 55
+	input := rop.Success(value)
+	ctx := rop.WithRetry(context.Background(), rop.NewFixedRetryStrategy(7, time.Second))
+
+	result := solo.RetryWithCtx(ctx, input, throwError)
+
+	assert.False(t, result.IsSuccess())
+	assert.False(t, result.IsCancel())
+	//assert.Equal(t, strconv.Itoa(value), result.Result())
+	assert.NotNil(t, result.Err())
+}
+
+func throwError(_ context.Context, r int) (string, error) {
+	if r == 100 {
+		return "OK", nil
+	}
+	return "ER", errors.New("! 100")
 }
 
 func Test_OnBothMap_Fail(t *testing.T) {

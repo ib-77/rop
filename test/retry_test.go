@@ -98,9 +98,25 @@ func Test_WithRetryStrategyContext(t *testing.T) {
 	maxDu := 6 * time.Second
 	ctx = rop.WithRetry(ctx, rop.NewLinearRetryStrategy(2, du, &maxDu))
 
-	rs := rop.GetRetryFromCtx(ctx)
+	rs, _ := rop.GetRetryFromCtx(ctx)
 	assert.Equal(t, int64(2), rs.Attempts())
 	assert.Equal(t, du, rs.Wait(1))
 	assert.Equal(t, du*2, rs.Wait(2))
 	assert.Equal(t, du*2, rs.Wait(3))
+}
+
+func Test_WithRetryStrategyContextNil(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	rs, ok := rop.GetRetryFromCtx(ctx)
+	assert.Nil(t, rs)
+	assert.False(t, ok)
+}
+
+func Test_WithRetryStrategyContextDef(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	rs := rop.NewFixedRetryStrategy(10, time.Microsecond)
+	res := rop.GetRetryFromCtxDef(ctx, rs)
+	assert.Equal(t, rs, res)
 }
