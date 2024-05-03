@@ -182,6 +182,19 @@ func TeeWithError[T any](input rop.Result[T], deadEndF func(r rop.Result[T]) err
 	return input
 }
 
+func TeeWithErrorWithCtx[T any](ctx context.Context, input rop.Result[T],
+	deadEndF func(ctx context.Context, r rop.Result[T]) error) rop.Result[T] {
+
+	if input.IsSuccess() {
+		err := deadEndF(ctx, input)
+		if err != nil {
+			return rop.Fail[T](err)
+		}
+	}
+
+	return input
+}
+
 func TeeWithCtx[T any](ctx context.Context, input rop.Result[T],
 	deadEndF func(ctx context.Context, r rop.Result[T])) rop.Result[T] {
 
@@ -357,12 +370,50 @@ func Check[In any](input rop.Result[In], boolF func(r In) bool, falseErrMsg stri
 	}
 }
 
+func CheckWithCtx[In any](ctx context.Context, input rop.Result[In],
+	boolF func(ctx context.Context, r In) bool, falseErrMsg string) rop.Result[bool] {
+
+	if input.IsSuccess() {
+
+		if ok := boolF(ctx, input.Result()); ok {
+			return rop.Success[bool](true)
+		} else {
+			return rop.Fail[bool](errors.New(falseErrMsg))
+		}
+	}
+
+	if input.IsCancel() {
+		return rop.Cancel[bool](input.Err())
+	} else {
+		return rop.Fail[bool](input.Err())
+	}
+}
+
 // CheckCancel TODO unit test
 func CheckCancel[In any](input rop.Result[In], boolF func(r In) bool, falseCancelMsg string) rop.Result[bool] {
 
 	if input.IsSuccess() {
 
 		if ok := boolF(input.Result()); ok {
+			return rop.Success[bool](true)
+		} else {
+			return rop.Cancel[bool](errors.New(falseCancelMsg))
+		}
+	}
+
+	if input.IsCancel() {
+		return rop.Cancel[bool](input.Err())
+	} else {
+		return rop.Fail[bool](input.Err())
+	}
+}
+
+func CheckCancelWithCtx[In any](ctx context.Context, input rop.Result[In],
+	boolF func(ctx context.Context, r In) bool, falseCancelMsg string) rop.Result[bool] {
+
+	if input.IsSuccess() {
+
+		if ok := boolF(ctx, input.Result()); ok {
 			return rop.Success[bool](true)
 		} else {
 			return rop.Cancel[bool](errors.New(falseCancelMsg))
@@ -435,10 +486,25 @@ func SucceedWith[In any, Out any](input rop.Result[In], successF func(r In) Out)
 	return rop.Success(successF(input.Result()))
 }
 
+func SucceedWithCtx[In any, Out any](ctx context.Context, input rop.Result[In],
+	successF func(ctx context.Context, r In) Out) rop.Result[Out] {
+	return rop.Success(successF(ctx, input.Result()))
+}
+
 func FailWith[In any, Out any](input rop.Result[In], failF func(r rop.Result[In]) error) rop.Result[Out] {
 	return rop.Fail[Out](failF(input))
 }
 
+func FailWithCtx[In any, Out any](ctx context.Context, input rop.Result[In],
+	failF func(ctx context.Context, r rop.Result[In]) error) rop.Result[Out] {
+	return rop.Fail[Out](failF(ctx, input))
+}
+
 func CancelWith[In any, Out any](input rop.Result[In], cancelF func(r rop.Result[In]) error) rop.Result[Out] { // cancelF out
 	return rop.Cancel[Out](cancelF(input))
+}
+
+func CancelWithCtx[In any, Out any](ctx context.Context, input rop.Result[In],
+	cancelF func(ctx context.Context, r rop.Result[In]) error) rop.Result[Out] { // cancelF out
+	return rop.Cancel[Out](cancelF(ctx, input))
 }
