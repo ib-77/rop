@@ -17,6 +17,16 @@ func Validate[T any](input T, validateF func(in T) bool, errMsg string) rop.Resu
 	}
 }
 
+func ValidateWithCtx[T any](ctx context.Context, input T,
+	validateF func(ctx context.Context, in T) bool, errMsg string) rop.Result[T] {
+
+	if validateF(ctx, input) {
+		return rop.Success(input)
+	} else {
+		return rop.Fail[T](errors.New(errMsg))
+	}
+}
+
 func ValidateWithErr[T any](input T, validateF func(in T) (bool, error)) rop.Result[T] {
 
 	if ok, err := validateF(input); ok {
@@ -26,7 +36,7 @@ func ValidateWithErr[T any](input T, validateF func(in T) (bool, error)) rop.Res
 	}
 }
 
-func ValidateWithCtxWithErr[T any](ctx context.Context, input T,
+func ValidateWithErrWithCtx[T any](ctx context.Context, input T,
 	validateF func(ctx context.Context, in T) (bool, error)) rop.Result[T] {
 
 	if ok, err := validateF(ctx, input); ok {
@@ -67,6 +77,20 @@ func AndValidate[T any](input rop.Result[T], validateF func(in T) bool, errMsg s
 	return input
 }
 
+func AndValidateWithCtx[T any](ctx context.Context, input rop.Result[T],
+	validateF func(ctx context.Context, in T) bool, errMsg string) rop.Result[T] {
+
+	if input.IsSuccess() {
+
+		if validateF(ctx, input.Result()) {
+			return rop.Success(input.Result())
+		} else {
+			return rop.Fail[T](errors.New(errMsg))
+		}
+	}
+	return input
+}
+
 func AndValidateWithErr[T any](input rop.Result[T], validateF func(in T) (bool, error)) rop.Result[T] {
 
 	if input.IsSuccess() {
@@ -80,7 +104,7 @@ func AndValidateWithErr[T any](input rop.Result[T], validateF func(in T) (bool, 
 	return input
 }
 
-func AndValidateWithCtxWithErr[T any](ctx context.Context, input rop.Result[T],
+func AndValidateWithErrWithCtx[T any](ctx context.Context, input rop.Result[T],
 	validateF func(ctx context.Context, in T) (bool, error)) rop.Result[T] {
 
 	if input.IsSuccess() {

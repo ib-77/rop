@@ -428,40 +428,40 @@ func Test_MassCase01_FailZero(t *testing.T) {
 	assert.Equal(t, totalElements, count)
 }
 
-func successConvertIntToStrResult(r int) rop.Result[string] {
+func successConvertIntToStrResult(_ context.Context, r int) rop.Result[string] {
 	return rop.Success(strconv.Itoa(r))
 }
 
-func successConvertIntToStr(r int) string {
+func successConvertIntToStr(_ context.Context, r int) string {
 	return strconv.Itoa(r)
 }
 
-func successFinally(r int) string {
+func successFinally(_ context.Context, r int) string {
 	return "ok"
 }
 
-func successConvertIntToStrWithErr(r int) (string, error) {
+func successConvertIntToStrWithErr(_ context.Context, r int) (string, error) {
 	return strconv.Itoa(r), nil
 }
 
-func failConvertIntToStrWithErr(r int) (re string, err error) {
+func failConvertIntToStrWithErr(_ context.Context, r int) (re string, err error) {
 	err = fmt.Errorf("cannot convert %d", r)
 	return
 }
 
-func failConvertIntToStrResult(r int) rop.Result[string] {
+func failConvertIntToStrResult(_ context.Context, r int) rop.Result[string] {
 	return rop.Fail[string](fmt.Errorf("cannot convert %d", r))
 }
 
-func failConvertIntToStr(r int) string {
+func failConvertIntToStr(_ context.Context, r int) string {
 	return "cannot convert"
 }
 
-func failConvertIntToStrProcessError(err error) string {
+func failConvertIntToStrProcessError(_ context.Context, err error) string {
 	return "error"
 }
 
-func cancelConvertIntToStrProcessError(err error) string {
+func cancelConvertIntToStrProcessError(_ context.Context, err error) string {
 	return "cancelled before"
 }
 
@@ -521,22 +521,22 @@ func generateBufferedChanCloseOn(amount int, bufferSize int, closeOn int) chan i
 	return inputs
 }
 
-func allSuccess[T any](i T) bool {
+func allSuccess[T any](ctx context.Context, i T) bool {
 	return true
 }
 
-func allFail[T any](i T) bool {
+func allFail[T any](ctx context.Context, i T) bool {
 	return false
 }
 
-func CancelF[T any](in T) error {
+func CancelF[T any](ctx context.Context, in T) error {
 	return fmt.Errorf("---- processing of value %v was cancelled", in)
 }
 
-func CancelRopF[T any](in rop.Result[T]) error {
+func CancelRopF[T any](ctx context.Context, in rop.Result[T]) error {
 	return fmt.Errorf("---- processing of value %v was cancelled", in)
 }
 
-func CancelStrF[In any](in rop.Result[In]) string {
+func CancelStrF[In any](_ context.Context, in rop.Result[In]) string {
 	return fmt.Sprintf("---- processing of value %v was cancelled", in)
 }

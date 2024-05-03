@@ -7,7 +7,8 @@ import (
 )
 
 func Validate[T any](ctx context.Context, inputs <-chan T,
-	validateF func(in T) bool, cancelF func(in T) error, errMsg string) <-chan rop.Result[T] {
+	validateF func(ctx context.Context, in T) bool,
+	cancelF func(ctx context.Context, in T) error, errMsg string) <-chan rop.Result[T] {
 
 	out := make(chan rop.Result[T])
 	go func(ctx context.Context, inputs <-chan T) {
@@ -17,11 +18,11 @@ func Validate[T any](ctx context.Context, inputs <-chan T,
 
 			select {
 			case <-ctx.Done():
-				out <- rop.Cancel[T](cancelF(in)) // cancel current !!!
-				ValidateCancelWith(inputs, out, cancelF)
+				out <- rop.Cancel[T](cancelF(ctx, in)) // cancel current !!!
+				ValidateCancelWithCtx(ctx, inputs, out, cancelF)
 				break
 			default:
-				out <- solo.Validate(in, validateF, errMsg)
+				out <- solo.ValidateWithCtx(ctx, in, validateF, errMsg)
 			}
 		}
 	}(ctx, inputs)
@@ -30,7 +31,8 @@ func Validate[T any](ctx context.Context, inputs <-chan T,
 }
 
 func AndValidate[T any](ctx context.Context, inputs <-chan rop.Result[T],
-	validateF func(in T) bool, cancelF func(in rop.Result[T]) error, errMsg string) <-chan rop.Result[T] {
+	validateF func(ctx context.Context, in T) bool,
+	cancelF func(ctx context.Context, in rop.Result[T]) error, errMsg string) <-chan rop.Result[T] {
 
 	out := make(chan rop.Result[T])
 	go func(ctx context.Context, inputs <-chan rop.Result[T], errMsg string) {
@@ -39,11 +41,11 @@ func AndValidate[T any](ctx context.Context, inputs <-chan rop.Result[T],
 		for in := range inputs {
 			select {
 			case <-ctx.Done():
-				out <- rop.Cancel[T](cancelF(in)) // cancel current !!!
-				AndValidateCancelWith[T](inputs, out, cancelF)
+				out <- rop.Cancel[T](cancelF(ctx, in)) // cancel current !!!
+				AndValidateCancelWithCtx[T](ctx, inputs, out, cancelF)
 				break
 			default:
-				out <- solo.AndValidate(in, validateF, errMsg)
+				out <- solo.AndValidateWithCtx(ctx, in, validateF, errMsg)
 			}
 		}
 
@@ -53,7 +55,8 @@ func AndValidate[T any](ctx context.Context, inputs <-chan rop.Result[T],
 }
 
 func Switch[In any, Out any](ctx context.Context, inputs <-chan rop.Result[In],
-	switchF func(r In) rop.Result[Out], cancelF func(r rop.Result[In]) error) <-chan rop.Result[Out] {
+	switchF func(ctx context.Context, r In) rop.Result[Out],
+	cancelF func(ctx context.Context, r rop.Result[In]) error) <-chan rop.Result[Out] {
 	out := make(chan rop.Result[Out])
 
 	go func(ctx context.Context, inputs <-chan rop.Result[In]) {
@@ -63,11 +66,11 @@ func Switch[In any, Out any](ctx context.Context, inputs <-chan rop.Result[In],
 
 			select {
 			case <-ctx.Done():
-				out <- solo.CancelWith[In, Out](in, cancelF) // cancel current !!!
-				CancelWith(inputs, out, cancelF)
+				out <- solo.CancelWithCtx[In, Out](ctx, in, cancelF) // cancel current !!!
+				CancelWithCtx(ctx, inputs, out, cancelF)
 				return
 			default:
-				out <- solo.Switch(in, switchF)
+				out <- solo.SwitchWithCtx(ctx, in, switchF)
 			}
 
 		}
@@ -76,7 +79,8 @@ func Switch[In any, Out any](ctx context.Context, inputs <-chan rop.Result[In],
 }
 
 func Map[In any, Out any](ctx context.Context, inputs <-chan rop.Result[In],
-	mapF func(r In) Out, cancelF func(r rop.Result[In]) error) <-chan rop.Result[Out] {
+	mapF func(ctx context.Context, r In) Out,
+	cancelF func(ctx context.Context, r rop.Result[In]) error) <-chan rop.Result[Out] {
 
 	out := make(chan rop.Result[Out])
 
@@ -87,11 +91,11 @@ func Map[In any, Out any](ctx context.Context, inputs <-chan rop.Result[In],
 
 			select {
 			case <-ctx.Done():
-				out <- solo.CancelWith[In, Out](in, cancelF) // cancel current !!!
-				CancelWith(inputs, out, cancelF)
+				out <- solo.CancelWithCtx[In, Out](ctx, in, cancelF) // cancel current !!!
+				CancelWithCtx(ctx, inputs, out, cancelF)
 				return
 			default:
-				out <- solo.Map(in, mapF)
+				out <- solo.MapWithCtx(ctx, in, mapF)
 			}
 
 		}
@@ -100,7 +104,8 @@ func Map[In any, Out any](ctx context.Context, inputs <-chan rop.Result[In],
 }
 
 func Tee[T any](ctx context.Context, inputs <-chan rop.Result[T],
-	deadEndF func(r rop.Result[T]), cancelF func(r rop.Result[T]) error) <-chan rop.Result[T] {
+	deadEndF func(ctx context.Context, r rop.Result[T]),
+	cancelF func(ctx context.Context, r rop.Result[T]) error) <-chan rop.Result[T] {
 
 	out := make(chan rop.Result[T])
 
@@ -111,11 +116,11 @@ func Tee[T any](ctx context.Context, inputs <-chan rop.Result[T],
 
 			select {
 			case <-ctx.Done():
-				out <- solo.CancelWith[T, T](in, cancelF) // cancel current !!!
-				CancelWith(inputs, out, cancelF)
+				out <- solo.CancelWithCtx[T, T](ctx, in, cancelF) // cancel current !!!
+				CancelWithCtx(ctx, inputs, out, cancelF)
 				return
 			default:
-				out <- solo.Tee(in, deadEndF)
+				out <- solo.TeeWithCtx(ctx, in, deadEndF)
 			}
 		}
 	}(ctx, inputs)
@@ -123,8 +128,10 @@ func Tee[T any](ctx context.Context, inputs <-chan rop.Result[T],
 }
 
 func DoubleMap[In any, Out any](ctx context.Context, inputs <-chan rop.Result[In],
-	successF func(r In) Out, failF func(err error) Out, cancelF func(err error) Out,
-	massCancelF func(r rop.Result[In]) error) <-chan rop.Result[Out] {
+	successF func(ctx context.Context, r In) Out,
+	failF func(ctx context.Context, err error) Out,
+	cancelF func(ctx context.Context, err error) Out,
+	massCancelF func(ctx context.Context, r rop.Result[In]) error) <-chan rop.Result[Out] {
 
 	out := make(chan rop.Result[Out])
 
@@ -135,18 +142,18 @@ func DoubleMap[In any, Out any](ctx context.Context, inputs <-chan rop.Result[In
 
 			select {
 			case <-ctx.Done():
-				out <- solo.CancelWith[In, Out](in, massCancelF) // cancel current !!!
-				CancelWith(inputs, out, massCancelF)
+				out <- solo.CancelWithCtx[In, Out](ctx, in, massCancelF) // cancel current !!!
+				CancelWithCtx(ctx, inputs, out, massCancelF)
 				return
 			default:
-				out <- solo.DoubleMap(in, successF, failF, cancelF)
+				out <- solo.DoubleMapWithCtx(ctx, in, successF, failF, cancelF)
 			}
 		}
 	}(ctx, inputs)
 	return out
 }
 
-func MassSucceedWith[In any, Out any](inputs <-chan rop.Result[In], outs chan rop.Result[Out],
+func SucceedWith[In any, Out any](inputs <-chan rop.Result[In], outs chan rop.Result[Out],
 	successF func(r In) Out) <-chan rop.Result[Out] {
 
 	for f := range inputs {
@@ -173,6 +180,16 @@ func ValidateCancelWith[In any](inputs <-chan In, outs chan rop.Result[In],
 	return outs
 }
 
+func ValidateCancelWithCtx[In any](ctx context.Context, inputs <-chan In,
+	outs chan rop.Result[In],
+	cancelF func(ctx context.Context, r In) error) <-chan rop.Result[In] {
+
+	for c := range inputs {
+		outs <- rop.Cancel[In](cancelF(ctx, c))
+	}
+	return outs
+}
+
 func AndValidateCancelWith[In any](inputs <-chan rop.Result[In], outs chan rop.Result[In],
 	cancelF func(r rop.Result[In]) error) <-chan rop.Result[In] {
 
@@ -182,8 +199,18 @@ func AndValidateCancelWith[In any](inputs <-chan rop.Result[In], outs chan rop.R
 	return outs
 }
 
+func AndValidateCancelWithCtx[In any](ctx context.Context, inputs <-chan rop.Result[In], outs chan rop.Result[In],
+	cancelF func(ctx context.Context, r rop.Result[In]) error) <-chan rop.Result[In] {
+
+	for c := range inputs {
+		outs <- rop.Cancel[In](cancelF(ctx, c))
+	}
+	return outs
+}
+
 func Try[In any, Out any](ctx context.Context, inputs <-chan rop.Result[In],
-	withErrF func(r In) (Out, error), cancelF func(r rop.Result[In]) error) <-chan rop.Result[Out] {
+	withErrF func(ctx context.Context, r In) (Out, error),
+	cancelF func(ctx context.Context, r rop.Result[In]) error) <-chan rop.Result[Out] {
 
 	out := make(chan rop.Result[Out])
 
@@ -194,11 +221,11 @@ func Try[In any, Out any](ctx context.Context, inputs <-chan rop.Result[In],
 
 			select {
 			case <-ctx.Done():
-				out <- solo.CancelWith[In, Out](in, cancelF) // cancel current !!!
-				CancelWith(inputs, out, cancelF)
+				out <- solo.CancelWithCtx[In, Out](ctx, in, cancelF) // cancel current !!!
+				CancelWithCtx(ctx, inputs, out, cancelF)
 				return
 			default:
-				out <- solo.Try(in, withErrF)
+				out <- solo.TryWithCtx(ctx, in, withErrF)
 			}
 		}
 	}(ctx, inputs)
@@ -206,30 +233,33 @@ func Try[In any, Out any](ctx context.Context, inputs <-chan rop.Result[In],
 }
 
 func Check[In any](ctx context.Context, inputs <-chan rop.Result[In],
-	boolF func(r In) bool, falseErrMsg string, cancelF func(r rop.Result[In]) error) <-chan rop.Result[bool] {
+	boolF func(ctx context.Context, r In) bool, falseErrMsg string,
+	cancelF func(ctx context.Context, r rop.Result[In]) error) <-chan rop.Result[bool] {
 
 	out := make(chan rop.Result[bool])
 
-	go func(ctx context.Context, inputs <-chan rop.Result[In]) {
+	go func(ctx context.Context, inputs <-chan rop.Result[In], falseErrMsg string) {
 		defer close(out)
 
 		for in := range inputs {
 
 			select {
 			case <-ctx.Done():
-				out <- rop.Cancel[bool](cancelF(in)) // cancel current !!!
-				CheckCancelWith(inputs, out, cancelF)
+				out <- rop.Cancel[bool](cancelF(ctx, in)) // cancel current !!!
+				CheckCancelWithCtx(ctx, inputs, out, cancelF)
 				return
 			default:
-				out <- solo.Check(in, boolF, falseErrMsg)
+				out <- solo.CheckWithCtx(ctx, in, boolF, falseErrMsg)
 			}
 		}
-	}(ctx, inputs)
+	}(ctx, inputs, falseErrMsg)
 	return out
 }
 
 func Finally[Out, In any](ctx context.Context, inputs <-chan rop.Result[In],
-	successF func(r In) Out, failF func(err error) Out, cancelF func(r rop.Result[In]) Out) <-chan Out {
+	successF func(ctx context.Context, r In) Out,
+	failF func(ctx context.Context, err error) Out,
+	cancelF func(ctx context.Context, r rop.Result[In]) Out) <-chan Out {
 
 	out := make(chan Out)
 
@@ -240,11 +270,11 @@ func Finally[Out, In any](ctx context.Context, inputs <-chan rop.Result[In],
 
 			select {
 			case <-ctx.Done():
-				out <- cancelF(in) // cancel current !!!
-				FinallyCancelWith(inputs, out, cancelF)
+				out <- cancelF(ctx, in) // cancel current !!!
+				FinallyCancelWithCtx(ctx, inputs, out, cancelF)
 				return
 			default:
-				out <- solo.Finally(in, successF, failF)
+				out <- solo.FinallyWithCtx(ctx, in, successF, failF)
 			}
 		}
 	}(ctx, inputs)
@@ -260,6 +290,16 @@ func CancelWith[In any, Out any](inputs <-chan rop.Result[In], outs chan rop.Res
 	return outs
 }
 
+func CancelWithCtx[In any, Out any](ctx context.Context, inputs <-chan rop.Result[In],
+	outs chan rop.Result[Out],
+	cancelF func(ctx context.Context, r rop.Result[In]) error) <-chan rop.Result[Out] {
+
+	for c := range inputs {
+		outs <- solo.CancelWithCtx[In, Out](ctx, c, cancelF)
+	}
+	return outs
+}
+
 func FinallyCancelWith[Out, In any](inputs <-chan rop.Result[In], outs chan Out,
 	cancelF func(r rop.Result[In]) Out) <-chan Out {
 
@@ -270,11 +310,31 @@ func FinallyCancelWith[Out, In any](inputs <-chan rop.Result[In], outs chan Out,
 	return outs
 }
 
+func FinallyCancelWithCtx[Out, In any](ctx context.Context, inputs <-chan rop.Result[In],
+	outs chan Out, cancelF func(ctx context.Context, r rop.Result[In]) Out) <-chan Out {
+
+	for c := range inputs {
+		outs <- cancelF(ctx, c)
+	}
+
+	return outs
+}
+
 func CheckCancelWith[In any](inputs <-chan rop.Result[In], outs chan rop.Result[bool],
 	cancelF func(r rop.Result[In]) error) <-chan rop.Result[bool] {
 
 	for c := range inputs {
 		outs <- rop.Cancel[bool](cancelF(c))
+	}
+	return outs
+}
+
+func CheckCancelWithCtx[In any](ctx context.Context, inputs <-chan rop.Result[In],
+	outs chan rop.Result[bool],
+	cancelF func(ctx context.Context, r rop.Result[In]) error) <-chan rop.Result[bool] {
+
+	for c := range inputs {
+		outs <- rop.Cancel[bool](cancelF(ctx, c))
 	}
 	return outs
 }

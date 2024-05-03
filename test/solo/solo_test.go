@@ -209,7 +209,7 @@ func Test_Retry_Success(t *testing.T) {
 
 	assert.True(t, result.IsSuccess())
 	assert.False(t, result.IsCancel())
-	assert.Equal(t, strconv.Itoa(value), result.Result())
+	assert.Equal(t, "OK", result.Result())
 	assert.Nil(t, result.Err())
 }
 
@@ -301,6 +301,31 @@ func TestCase02(t *testing.T) {
 		t.Parallel()
 
 		result := test.RopCase02(0)
+		assert.Equal(t, result, "error: a is less or 0!")
+	})
+}
+
+func TestCase03(t *testing.T) {
+	ctx := context.Background()
+
+	t.Run("success", func(t *testing.T) {
+		t.Parallel()
+
+		result := test.RopCase03(ctx, 1)
+		assert.Equal(t, result, "all ok")
+	})
+
+	t.Run("fail at start", func(t *testing.T) {
+		t.Parallel()
+
+		result := test.RopCase03(ctx, 3)
+		assert.Equal(t, result, "error: value more than 2")
+	})
+
+	t.Run("fail zero", func(t *testing.T) {
+		t.Parallel()
+
+		result := test.RopCase03(ctx, 0)
 		assert.Equal(t, result, "error: a is less or 0!")
 	})
 }
