@@ -510,6 +510,10 @@ func SucceedWith[In any, Out any](input rop.Result[In], successF func(r In) Out)
 	return rop.Success(successF(input.Result()))
 }
 
+func Succeed[In any](input In) rop.Result[In] {
+	return rop.Success(input)
+}
+
 func SucceedWithCtx[In any, Out any](ctx context.Context, input rop.Result[In],
 	successF func(ctx context.Context, r In) Out) rop.Result[Out] {
 	return rop.Success(successF(ctx, input.Result()))
@@ -519,6 +523,10 @@ func FailWith[In any, Out any](input rop.Result[In], failF func(r rop.Result[In]
 	return rop.Fail[Out](failF(input))
 }
 
+func Fail[In any](err error) rop.Result[In] {
+	return rop.Fail[In](err)
+}
+
 func FailWithCtx[In any, Out any](ctx context.Context, input rop.Result[In],
 	failF func(ctx context.Context, r rop.Result[In]) error) rop.Result[Out] {
 	return rop.Fail[Out](failF(ctx, input))
@@ -526,6 +534,10 @@ func FailWithCtx[In any, Out any](ctx context.Context, input rop.Result[In],
 
 func CancelWith[In any, Out any](input rop.Result[In], cancelF func(r rop.Result[In]) error) rop.Result[Out] { // cancelF out
 	return rop.Cancel[Out](cancelF(input))
+}
+
+func Cancel[In any](err error) rop.Result[In] {
+	return rop.Cancel[In](err)
 }
 
 func CancelWithCtx[In any, Out any](ctx context.Context, input rop.Result[In],

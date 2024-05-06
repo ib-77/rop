@@ -12,7 +12,7 @@ type WithCancel[T any] interface {
 	IsCancel() bool
 }
 
-//type Rop[T any] interface {
+//type IRes[T any] interface {
 //	Result() T
 //	Err() error
 //	IsSuccess() bool
