@@ -140,6 +140,19 @@ func AndValidateCancelWithErr[T any](input rop.Result[T], validateF func(in T) (
 	return input
 }
 
+func AndValidateCancelWithCtx[T any](ctx context.Context, input rop.Result[T],
+	validateF func(ctx context.Context, in T) bool, cancelMsg string) rop.Result[T] {
+
+	if input.IsSuccess() {
+		if ok := validateF(ctx, input.Result()); ok {
+			return rop.Success(input.Result())
+		} else {
+			return rop.Cancel[T](fmt.Errorf(cancelMsg))
+		}
+	}
+	return input
+}
+
 func Switch[In any, Out any](input rop.Result[In], switchF func(r In) rop.Result[Out]) rop.Result[Out] {
 
 	if input.IsSuccess() {
