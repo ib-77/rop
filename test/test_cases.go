@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/ib-77/rop/pkg/rop"
+	"github.com/ib-77/rop/pkg/rop/group"
 	"github.com/ib-77/rop/pkg/rop/mass"
 	"github.com/ib-77/rop/pkg/rop/solo"
 )
@@ -65,6 +66,27 @@ func RopCase03(ctx context.Context, input int) string {
 				addCharsCtx),
 			logSuccessCtx, logFailCtx, logCancelCtx),
 		returnSuccessResultCtx, returnFailResultCtx)
+}
+
+// TODO review test!
+func RopCase04(ctx context.Context, input1 int, input2 int,
+	validateF func(ctx context.Context, resId int, in rop.Result[int]) rop.Result[int]) string {
+
+	return solo.FinallyWithCtx(ctx,
+		group.OrWithCtx(ctx, validateF,
+			func(ctx context.Context) rop.Result[int] {
+				return solo.SwitchWithCtx(ctx,
+					solo.ValidateWithErrWithCtx(ctx, input1,
+						lessTwoErrCtx),
+					greaterThanZeroCtx)
+			},
+			func(ctx context.Context) rop.Result[int] {
+				return solo.SwitchWithCtx(ctx,
+					solo.ValidateWithErrWithCtx(ctx, input2,
+						lessTwoErrCtx),
+					greaterThanZeroCtx)
+			}),
+		returnSuccessResultIntValueCtx, returnFailResultCtx)
 }
 
 func RopBenchCase01(input int) string {
@@ -182,6 +204,14 @@ func greaterThanZeroCtx(_ context.Context, a int) rop.Result[int] {
 	return rop.Fail[int](errors.New("a is less or 0!"))
 }
 
+func sumInt(rs ...rop.Result[int]) rop.Result[int] {
+	sum := 0
+	for _, s := range rs {
+		sum += s.Result()
+	}
+	return rop.Success(sum)
+}
+
 func addChars(r string) string {
 	return r + "fff"
 }
@@ -203,9 +233,15 @@ func equalHundredOrThrowErrorCtx(_ context.Context, r int) (string, error) {
 func doAndForget(r rop.Result[string]) {
 	fmt.Printf("do something with 100!\n")
 }
+
 func doAndForgetCtx(_ context.Context, r rop.Result[string]) {
 	fmt.Printf("do something with 100!\n")
 }
+
+func doAndForgetIntCtx(_ context.Context, r rop.Result[int]) {
+	fmt.Printf("do something with 100!\n")
+}
+
 func doAndForgetNoFormat(r rop.Result[string]) {
 }
 
@@ -254,6 +290,14 @@ func returnSuccessResult(r string) string {
 func returnSuccessResultCtx(_ context.Context, r string) string {
 	return "all ok"
 }
+
+func returnSuccessResultIntCtx(_ context.Context, r int) string {
+	return "all ok"
+}
+func returnSuccessResultIntValueCtx(_ context.Context, r int) string {
+	return fmt.Sprintf("all ok %d", r)
+}
+
 func returnFailResult(er error) string {
 	return fmt.Sprintf("error: %s", er)
 }

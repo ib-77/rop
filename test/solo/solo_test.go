@@ -254,7 +254,7 @@ func Test_OnBothMap_Fail(t *testing.T) {
 	assert.False(t, result.IsCancel())
 	assert.Empty(t, result.Result())
 	assert.NotEmpty(t, result.Err())
-	assert.Equal(t, errMsg, "erroo"+"fails")
+	assert.Equal(t, "erroo"+"fails", errMsg)
 }
 
 func TestCase01(t *testing.T) {
@@ -263,21 +263,21 @@ func TestCase01(t *testing.T) {
 		t.Parallel()
 
 		result := test.RopCase01(1)
-		assert.Equal(t, result, "all ok")
+		assert.Equal(t, "all ok", result)
 	})
 
 	t.Run("fail at start", func(t *testing.T) {
 		t.Parallel()
 
 		result := test.RopCase01(3)
-		assert.Equal(t, result, "error: value more than 2")
+		assert.Equal(t, "error: value more than 2", result)
 	})
 
 	t.Run("fail zero", func(t *testing.T) {
 		t.Parallel()
 
 		result := test.RopCase01(0)
-		assert.Equal(t, result, "error: a is less or 0!")
+		assert.Equal(t, "error: a is less or 0!", result)
 	})
 }
 
@@ -287,21 +287,21 @@ func TestCase02(t *testing.T) {
 		t.Parallel()
 
 		result := test.RopCase02(1)
-		assert.Equal(t, result, "all ok")
+		assert.Equal(t, "all ok", result)
 	})
 
 	t.Run("fail at start", func(t *testing.T) {
 		t.Parallel()
 
 		result := test.RopCase02(3)
-		assert.Equal(t, result, "error: value more than 2")
+		assert.Equal(t, "error: value more than 2", result)
 	})
 
 	t.Run("fail zero", func(t *testing.T) {
 		t.Parallel()
 
 		result := test.RopCase02(0)
-		assert.Equal(t, result, "error: a is less or 0!")
+		assert.Equal(t, "error: a is less or 0!", result)
 	})
 }
 
@@ -312,21 +312,60 @@ func TestCase03(t *testing.T) {
 		t.Parallel()
 
 		result := test.RopCase03(ctx, 1)
-		assert.Equal(t, result, "all ok")
+		assert.Equal(t, "all ok", result)
 	})
 
 	t.Run("fail at start", func(t *testing.T) {
 		t.Parallel()
 
 		result := test.RopCase03(ctx, 3)
-		assert.Equal(t, result, "error: value more than 2")
+		assert.Equal(t, "error: value more than 2", result)
 	})
 
 	t.Run("fail zero", func(t *testing.T) {
 		t.Parallel()
 
 		result := test.RopCase03(ctx, 0)
-		assert.Equal(t, result, "error: a is less or 0!")
+		assert.Equal(t, "error: a is less or 0!", result)
+	})
+}
+
+func TestCase04(t *testing.T) {
+	ctx := context.Background()
+
+	t.Run("success", func(t *testing.T) {
+		t.Parallel()
+
+		result := test.RopCase04(ctx, 1, 1)
+		assert.Equal(t, "all ok 200", result)
+	})
+
+	t.Run("fail at start", func(t *testing.T) {
+		t.Parallel()
+
+		result := test.RopCase04(ctx, 3, 1)
+		assert.Equal(t, "error: value more than 2", result)
+	})
+
+	t.Run("fail at end", func(t *testing.T) {
+		t.Parallel()
+
+		result := test.RopCase04(ctx, 1, 3)
+		assert.Equal(t, "error: value more than 2", result)
+	})
+
+	t.Run("fail zero", func(t *testing.T) {
+		t.Parallel()
+
+		result := test.RopCase04(ctx, 0, 1)
+		assert.Equal(t, "error: a is less or 0!", result)
+	})
+
+	t.Run("fail more 2", func(t *testing.T) {
+		t.Parallel()
+
+		result := test.RopCase04(ctx, 1, 5)
+		assert.Equal(t, "error: value more than 2", result)
 	})
 }
 
