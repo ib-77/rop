@@ -6,10 +6,6 @@ import (
 	"github.com/ib-77/rop/pkg/rop"
 )
 
-const (
-	EmptyResult = "empty result"
-)
-
 func AndTeeWithCtx[In any](ctx context.Context, input rop.Result[In],
 	fs ...func(ctx context.Context, in rop.Result[In]) rop.Result[In]) rop.Result[In] {
 

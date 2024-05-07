@@ -55,6 +55,16 @@ func ValidateCancel[T any](input T, validateF func(in T) bool, cancelMsg string)
 	}
 }
 
+func ValidateCancelWithCtx[T any](ctx context.Context, input T,
+	validateF func(ctx context.Context, in T) bool, cancelMsg string) rop.Result[T] {
+
+	if validateF(ctx, input) {
+		return rop.Success(input)
+	} else {
+		return rop.Cancel[T](errors.New(cancelMsg))
+	}
+}
+
 func ValidateCancelWithErr[T any](input T, validateF func(in T) (bool, error)) rop.Result[T] {
 
 	if ok, cancelErr := validateF(input); ok {
