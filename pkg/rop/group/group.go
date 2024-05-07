@@ -11,6 +11,7 @@ const (
 	EmptyResult = "empty result"
 )
 
+// AndWithCtx TODO ctx done
 func AndWithCtx[In any](ctx context.Context,
 	validateF func(ctx context.Context, resId int, in rop.Result[In]) rop.Result[In],
 	accumF func(ctx context.Context, resId int, in rop.Result[In]) rop.Result[In],
@@ -22,18 +23,32 @@ func AndWithCtx[In any](ctx context.Context,
 
 	var accum rop.Result[In]
 	for id, f := range fs {
+
 		r := f(ctx)
+
 		if !r.IsSuccess() {
-			r = validateF(ctx, id, r)
-			if !r.IsSuccess() {
+			if validateF != nil {
+
+				r = validateF(ctx, id, r)
+				if !r.IsSuccess() {
+					return rop.Fail[In](r.Err())
+				}
+
+			} else {
 				return rop.Fail[In](r.Err())
 			}
 		}
-		accum = accumF(ctx, id, r)
+
+		if accumF != nil {
+			accum = accumF(ctx, id, r)
+		} else {
+			accum = r // last result
+		}
 	}
 	return accum
 }
 
+// OrWithCtx TODO ctx done
 func OrWithCtx[In any](ctx context.Context,
 	validateF func(ctx context.Context, resId int, in rop.Result[In]) rop.Result[In],
 	fs ...func(ctx context.Context) rop.Result[In]) rop.Result[In] {
@@ -44,13 +59,23 @@ func OrWithCtx[In any](ctx context.Context,
 
 	var err error = nil
 	for id, f := range fs {
+
 		r := f(ctx)
+
 		if r.IsSuccess() {
-			r = validateF(ctx, id, r)
-			if r.IsSuccess() {
+
+			if validateF != nil {
+
+				r = validateF(ctx, id, r)
+				if r.IsSuccess() {
+					return r
+				}
+
+			} else {
 				return r
 			}
 		}
+
 		err = rop.Iif(err == nil, r.Err(), errors.Join(err, r.Err()))
 	}
 
