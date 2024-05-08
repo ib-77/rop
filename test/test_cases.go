@@ -70,17 +70,18 @@ func RopCase03(ctx context.Context, input int) string {
 
 // TODO review test!
 func RopCase04(ctx context.Context, input1 int, input2 int,
-	validateF func(ctx context.Context, resId int, in rop.Result[int]) rop.Result[int]) string {
+	validateF func(ctx context.Context, in1 int, in2 int) rop.Result[int]) string {
 
 	return solo.FinallyWithCtx(ctx,
-		group.OrWithCtx(ctx, validateF,
-			func(ctx context.Context) rop.Result[int] {
+		group.OrTeeWithCtx(ctx,
+			validateF(ctx, input1, input2),
+			func(ctx context.Context, r rop.Result[int]) rop.Result[int] {
 				return solo.SwitchWithCtx(ctx,
 					solo.ValidateWithErrWithCtx(ctx, input1,
 						lessTwoErrCtx),
 					greaterThanZeroCtx)
 			},
-			func(ctx context.Context) rop.Result[int] {
+			func(ctx context.Context, r rop.Result[int]) rop.Result[int] {
 				return solo.SwitchWithCtx(ctx,
 					solo.ValidateWithErrWithCtx(ctx, input2,
 						lessTwoErrCtx),
