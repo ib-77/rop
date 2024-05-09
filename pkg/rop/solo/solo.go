@@ -207,6 +207,24 @@ func MapWithCtx[In any, Out any](ctx context.Context,
 	}
 }
 
+func MapWithErrWithCtx[In any, Out any](ctx context.Context,
+	input rop.Result[In], mapF func(ctx context.Context, r In) (Out, error)) rop.Result[Out] {
+
+	if input.IsSuccess() {
+		r, err := mapF(ctx, input.Result())
+		if err != nil {
+			return rop.Fail[Out](err)
+		}
+		return rop.Success(r)
+	} else {
+		if input.IsCancel() {
+			return rop.Cancel[Out](input.Err())
+		} else {
+			return rop.Fail[Out](input.Err())
+		}
+	}
+}
+
 func Tee[T any](input rop.Result[T], deadEndF func(r rop.Result[T])) rop.Result[T] {
 
 	if input.IsSuccess() {
@@ -217,7 +235,7 @@ func Tee[T any](input rop.Result[T], deadEndF func(r rop.Result[T])) rop.Result[
 }
 
 // TeeWithError TODO unit test
-func TeeWithError[T any](input rop.Result[T], deadEndF func(r rop.Result[T]) error) rop.Result[T] {
+func TeeWithErr[T any](input rop.Result[T], deadEndF func(r rop.Result[T]) error) rop.Result[T] {
 
 	if input.IsSuccess() {
 		err := deadEndF(input)
@@ -229,7 +247,7 @@ func TeeWithError[T any](input rop.Result[T], deadEndF func(r rop.Result[T]) err
 	return input
 }
 
-func TeeWithErrorWithCtx[T any](ctx context.Context, input rop.Result[T],
+func TeeWithErrWithCtx[T any](ctx context.Context, input rop.Result[T],
 	deadEndF func(ctx context.Context, r rop.Result[T]) error) rop.Result[T] {
 
 	if input.IsSuccess() {
