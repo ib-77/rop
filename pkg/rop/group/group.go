@@ -54,6 +54,10 @@ func OrTeeWithCtx[In any](ctx context.Context, input rop.Result[In],
 		return input
 	}
 
+	if len(fs) == 0 {
+		return input
+	}
+
 	var err error
 	for _, f := range fs {
 
@@ -74,6 +78,10 @@ func OrSwitchWithCtx[In, Out any](ctx context.Context, input rop.Result[In],
 	fs ...func(ctx context.Context, in rop.Result[In]) rop.Result[In]) rop.Result[Out] {
 
 	if !input.IsSuccess() {
+		return switchF(ctx, input)
+	}
+
+	if len(fs) == 0 {
 		return switchF(ctx, input)
 	}
 
