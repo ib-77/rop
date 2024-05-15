@@ -4,7 +4,59 @@ import (
 	"context"
 	"github.com/ib-77/rop/pkg/rop"
 	"github.com/ib-77/rop/pkg/rop/solo"
+	"time"
 )
+
+func SliceToChan[T any](input []T) <-chan T {
+	out := make(chan T)
+	go func() {
+		defer close(out)
+
+		for _, in := range input {
+			out <- in
+		}
+	}()
+	return out
+}
+
+func SliceToChanWithCancelCtx[T any](ctx context.Context, input []T,
+	isCancelF func(i int, in T) bool) (context.Context, <-chan T) {
+
+	out := make(chan T)
+	newCtx, cancel := context.WithCancel(ctx)
+	defer cancel()
+
+	go func() {
+		defer close(out)
+
+		for i, in := range input {
+			if isCancelF(i, in) {
+				cancel()
+			}
+			out <- in
+		}
+	}()
+
+	return newCtx, out
+}
+
+func SliceToChanWithTimeoutCtx[T any](ctx context.Context, input []T,
+	timeout time.Duration) (context.Context, <-chan T) {
+
+	out := make(chan T)
+	newCtx, cancel := context.WithTimeout(ctx, timeout)
+	defer cancel()
+
+	go func() {
+		defer close(out)
+
+		for _, in := range input {
+			out <- in
+		}
+	}()
+
+	return newCtx, out
+}
 
 func Validate[T any](ctx context.Context, inputs <-chan T,
 	validateF func(ctx context.Context, in T) bool,
@@ -20,7 +72,7 @@ func Validate[T any](ctx context.Context, inputs <-chan T,
 			case <-ctx.Done():
 				out <- rop.Cancel[T](cancelF(ctx, in)) // cancel current !!!
 				ValidateCancelWithCtx(ctx, inputs, out, cancelF)
-				break
+				return
 			default:
 				out <- solo.ValidateWithCtx(ctx, in, validateF, errMsg)
 			}
@@ -43,7 +95,7 @@ func AndValidate[T any](ctx context.Context, inputs <-chan rop.Result[T],
 			case <-ctx.Done():
 				out <- rop.Cancel[T](cancelF(ctx, in)) // cancel current !!!
 				AndValidateCancelWithCtx[T](ctx, inputs, out, cancelF)
-				break
+				return
 			default:
 				out <- solo.AndValidateWithCtx(ctx, in, validateF, errMsg)
 			}
