@@ -69,22 +69,34 @@ func RopCase03(ctx context.Context, input int) string {
 }
 
 // TODO review test!
-func RopCase04(ctx context.Context, input1 int, input2 int,
-	validateF func(ctx context.Context, resId int, in rop.Result[int]) rop.Result[int]) string {
+func RopCase04(ctx context.Context, input int) string {
 
 	return solo.FinallyWithCtx(ctx,
-		group.OrWithCtx(ctx, validateF,
-			func(ctx context.Context) rop.Result[int] {
-				return solo.SwitchWithCtx(ctx,
-					solo.ValidateWithErrWithCtx(ctx, input1,
-						lessTwoErrCtx),
-					greaterThanZeroCtx)
+		group.OrTeeWithCtx(ctx,
+			rop.Success(input),
+			func(ctx context.Context, in rop.Result[int]) (bool, rop.Result[int]) {
+
+				accepted, err := lessTwoErrCtx(ctx, in.Result())
+				if err != nil {
+					return false, rop.Fail[int](err)
+				}
+				if !accepted {
+					return false, rop.Cancel[int](fmt.Errorf("canceled 1"))
+				}
+
+				return true, solo.SwitchWithCtx(ctx, in, greaterThanZeroCtx)
 			},
-			func(ctx context.Context) rop.Result[int] {
-				return solo.SwitchWithCtx(ctx,
-					solo.ValidateWithErrWithCtx(ctx, input2,
-						lessTwoErrCtx),
-					greaterThanZeroCtx)
+			func(ctx context.Context, in rop.Result[int]) (bool, rop.Result[int]) {
+
+				accepted, err := lessTwoErrCtx(ctx, in.Result())
+				if err != nil {
+					return false, rop.Fail[int](err)
+				}
+				if !accepted {
+					return false, rop.Cancel[int](fmt.Errorf("canceled 2"))
+				}
+
+				return true, solo.SwitchWithCtx(ctx, in, greaterThanZeroCtx)
 			}),
 		returnSuccessResultIntValueCtx, returnFailResultCtx)
 }
@@ -299,10 +311,10 @@ func returnSuccessResultIntValueCtx(_ context.Context, r int) string {
 }
 
 func returnFailResult(er error) string {
-	return fmt.Sprintf("error: %s", er)
+	return fmt.Sprintf("error: %s", er.Error())
 }
 func returnFailResultCtx(_ context.Context, er error) string {
-	return fmt.Sprintf("error: %s", er)
+	return fmt.Sprintf("error: %s", er.Error())
 }
 
 func returnFailResultNoFormat(er error) string {

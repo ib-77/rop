@@ -336,36 +336,29 @@ func TestCase04(t *testing.T) {
 	t.Run("success", func(t *testing.T) {
 		t.Parallel()
 
-		result := test.RopCase04(ctx, 1, 1)
-		assert.Equal(t, "all ok 200", result)
+		result := test.RopCase04(ctx, 1)
+		assert.Equal(t, "all ok 100", result)
 	})
 
-	t.Run("fail at start", func(t *testing.T) {
+	t.Run("success default 3", func(t *testing.T) {
 		t.Parallel()
 
-		result := test.RopCase04(ctx, 3, 1)
-		assert.Equal(t, "error: value more than 2", result)
-	})
-
-	t.Run("fail at end", func(t *testing.T) {
-		t.Parallel()
-
-		result := test.RopCase04(ctx, 1, 3)
-		assert.Equal(t, "error: value more than 2", result)
+		result := test.RopCase04(ctx, 3)
+		assert.Equal(t, "all ok 3", result)
 	})
 
 	t.Run("fail zero", func(t *testing.T) {
 		t.Parallel()
 
-		result := test.RopCase04(ctx, 0, 1)
+		result := test.RopCase04(ctx, 0)
 		assert.Equal(t, "error: a is less or 0!", result)
 	})
 
-	t.Run("fail more 2", func(t *testing.T) {
+	t.Run("success default 5", func(t *testing.T) {
 		t.Parallel()
 
-		result := test.RopCase04(ctx, 1, 5)
-		assert.Equal(t, "error: value more than 2", result)
+		result := test.RopCase04(ctx, 5)
+		assert.Equal(t, "all ok 5", result)
 	})
 }
 
