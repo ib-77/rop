@@ -20,7 +20,7 @@ func Validate[T any](ctx context.Context, inputs <-chan T,
 			case <-ctx.Done():
 				out <- rop.Cancel[T](cancelF(ctx, in)) // cancel current !!!
 				ValidateCancelWithCtx(ctx, inputs, out, cancelF)
-				break
+				return
 			default:
 				out <- solo.ValidateWithCtx(ctx, in, validateF, errMsg)
 			}
@@ -43,7 +43,7 @@ func AndValidate[T any](ctx context.Context, inputs <-chan rop.Result[T],
 			case <-ctx.Done():
 				out <- rop.Cancel[T](cancelF(ctx, in)) // cancel current !!!
 				AndValidateCancelWithCtx[T](ctx, inputs, out, cancelF)
-				break
+				return
 			default:
 				out <- solo.AndValidateWithCtx(ctx, in, validateF, errMsg)
 			}
