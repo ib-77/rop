@@ -2,7 +2,6 @@ package group
 
 import (
 	"context"
-	"errors"
 	"github.com/ib-77/rop/pkg/rop"
 )
 
@@ -48,7 +47,7 @@ func AndSwitchWithCtx[In, Out any](ctx context.Context, input rop.Result[In],
 }
 
 func OrTeeWithCtx[In any](ctx context.Context, input rop.Result[In],
-	fs ...func(ctx context.Context, in rop.Result[In]) rop.Result[In]) rop.Result[In] {
+	fs ...func(ctx context.Context, in rop.Result[In]) (accepted bool, res rop.Result[In])) rop.Result[In] {
 
 	if !input.IsSuccess() {
 		return input
@@ -58,24 +57,25 @@ func OrTeeWithCtx[In any](ctx context.Context, input rop.Result[In],
 		return input
 	}
 
-	var err error
 	for _, f := range fs {
 
-		r := f(ctx, input)
+		accepted, r := f(ctx, input)
 
-		if r.IsSuccess() {
-			return r
+		if accepted {
+			if r.IsSuccess() {
+				return r
+			}
+			return rop.Fail[In](r.Err())
 		}
 
-		err = rop.Iif(err == nil, r.Err(), errors.Join(err, r.Err()))
 	}
 
-	return rop.Fail[In](err)
+	return input
 }
 
 func OrSwitchWithCtx[In, Out any](ctx context.Context, input rop.Result[In],
 	switchF func(ctx context.Context, r rop.Result[In]) rop.Result[Out],
-	fs ...func(ctx context.Context, in rop.Result[In]) rop.Result[In]) rop.Result[Out] {
+	fs ...func(ctx context.Context, in rop.Result[In]) (accepted bool, res rop.Result[In])) rop.Result[Out] {
 
 	if !input.IsSuccess() {
 		return switchF(ctx, input)
@@ -85,17 +85,19 @@ func OrSwitchWithCtx[In, Out any](ctx context.Context, input rop.Result[In],
 		return switchF(ctx, input)
 	}
 
-	var err error
 	for _, f := range fs {
 
-		r := f(ctx, input)
+		accepted, r := f(ctx, input)
 
-		if r.IsSuccess() {
-			return switchF(ctx, r)
+		if accepted {
+
+			if r.IsSuccess() {
+				return switchF(ctx, r)
+			}
+
+			return rop.Fail[Out](r.Err())
 		}
-
-		err = rop.Iif(err == nil, r.Err(), errors.Join(err, r.Err()))
 	}
 
-	return rop.Fail[Out](err)
+	return switchF(ctx, input)
 }
