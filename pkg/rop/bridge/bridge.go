@@ -106,7 +106,7 @@ func Map[In, Out any](ctx context.Context, inputChs <-chan <-chan rop.Result[In]
 	return outCh
 }
 
-func Tee[T any](ctx context.Context, inputChs <-chan <-chan rop.Result[T],
+func Tee[T any](ctx context.Context, inputChs chan chan rop.Result[T],
 	deadEndF func(ctx context.Context, r rop.Result[T]),
 	cancelF func(ctx context.Context, r rop.Result[T]) error) <-chan rop.Result[T] {
 
