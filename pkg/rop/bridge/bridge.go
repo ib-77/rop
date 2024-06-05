@@ -7,7 +7,7 @@ import (
 	"github.com/ib-77/rop/pkg/rop/solo"
 )
 
-func Validate[T any](ctx context.Context, inputChs <-chan <-chan T,
+func Validate[T any](ctx context.Context, inputChs chan chan T,
 	validateF func(ctx context.Context, in T) bool,
 	cancelF func(ctx context.Context, in T) error, errMsg string) <-chan rop.Result[T] {
 
@@ -40,7 +40,7 @@ func Validate[T any](ctx context.Context, inputChs <-chan <-chan T,
 	return outCh
 }
 
-func AndValidate[T any](ctx context.Context, inputChs <-chan <-chan rop.Result[T],
+func AndValidate[T any](ctx context.Context, inputChs chan chan rop.Result[T],
 	validateF func(ctx context.Context, in T) bool,
 	cancelF func(ctx context.Context, in rop.Result[T]) error, errMsg string) <-chan rop.Result[T] {
 
@@ -73,7 +73,7 @@ func AndValidate[T any](ctx context.Context, inputChs <-chan <-chan rop.Result[T
 	return outCh
 }
 
-func Map[In, Out any](ctx context.Context, inputChs <-chan <-chan rop.Result[In],
+func Map[In, Out any](ctx context.Context, inputChs chan chan rop.Result[In],
 	mapF func(ctx context.Context, r In) Out,
 	cancelF func(ctx context.Context, r rop.Result[In]) error) <-chan rop.Result[Out] {
 
@@ -139,7 +139,7 @@ func Tee[T any](ctx context.Context, inputChs chan chan rop.Result[T],
 	return outCh
 }
 
-func Switch[In, Out any](ctx context.Context, inputChs <-chan <-chan rop.Result[In],
+func Switch[In, Out any](ctx context.Context, inputChs chan chan rop.Result[In],
 	switchF func(ctx context.Context, r In) rop.Result[Out],
 	cancelF func(ctx context.Context, r rop.Result[In]) error) <-chan rop.Result[Out] {
 
@@ -172,7 +172,7 @@ func Switch[In, Out any](ctx context.Context, inputChs <-chan <-chan rop.Result[
 	return outCh
 }
 
-func DoubleMap[In any, Out any](ctx context.Context, inputChs <-chan <-chan rop.Result[In],
+func DoubleMap[In any, Out any](ctx context.Context, inputChs chan chan rop.Result[In],
 	successF func(ctx context.Context, r In) Out,
 	failF func(ctx context.Context, err error) Out,
 	cancelF func(ctx context.Context, err error) Out,
@@ -207,7 +207,7 @@ func DoubleMap[In any, Out any](ctx context.Context, inputChs <-chan <-chan rop.
 	return outCh
 }
 
-func Try[In any, Out any](ctx context.Context, inputChs <-chan <-chan rop.Result[In],
+func Try[In any, Out any](ctx context.Context, inputChs chan chan rop.Result[In],
 	withErrF func(ctx context.Context, r In) (Out, error),
 	cancelF func(ctx context.Context, r rop.Result[In]) error) <-chan rop.Result[Out] {
 
@@ -240,7 +240,7 @@ func Try[In any, Out any](ctx context.Context, inputChs <-chan <-chan rop.Result
 	return outCh
 }
 
-func Finally[Out, In any](ctx context.Context, inputChs <-chan <-chan rop.Result[In],
+func Finally[Out, In any](ctx context.Context, inputChs chan chan rop.Result[In],
 	successF func(ctx context.Context, r In) Out,
 	failF func(ctx context.Context, err error) Out,
 	cancelF func(ctx context.Context, r rop.Result[In]) Out) <-chan Out {
