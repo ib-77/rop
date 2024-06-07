@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"github.com/ib-77/rop/pkg/rop"
-	"github.com/ib-77/rop/pkg/rop/mass"
 	"github.com/ib-77/rop/test"
 	"github.com/stretchr/testify/assert"
 	"log"
@@ -25,7 +24,7 @@ func Test_MassValidate_True_UnbufferedInput(t *testing.T) {
 	inputs := generateUnbufferedChan(totalElements)
 	count := 0
 
-	for output := range mass.Validate(ctx, inputs, allSuccess[int], CancelF[int], "error") {
+	for output := range Validate(ctx, inputs, allSuccess[int], CancelF[int], "error") {
 		assert.True(t, output.IsSuccess())
 		count++
 	}
@@ -40,7 +39,7 @@ func Test_MassValidate_True_BufferedInput(t *testing.T) {
 	inputs := generateBufferedChan(totalElements, totalElements)
 	count := 0
 
-	for output := range mass.Validate(ctx, inputs, allSuccess[int], CancelF[int], "error") {
+	for output := range Validate(ctx, inputs, allSuccess[int], CancelF[int], "error") {
 		assert.True(t, output.IsSuccess())
 		count++
 	}
@@ -56,7 +55,7 @@ func Test_MassValidate_True_BufferedInput_CloseInput(t *testing.T) {
 	inputs := generateBufferedChanCloseOn(totalElements, totalElements, closeOn)
 	count := 0
 
-	for output := range mass.Validate(ctx, inputs, allSuccess[int], CancelF[int], "error") {
+	for output := range Validate(ctx, inputs, allSuccess[int], CancelF[int], "error") {
 		assert.True(t, output.IsSuccess())
 		count++
 	}
@@ -71,7 +70,7 @@ func Test_MassValidate_False(t *testing.T) {
 	inputs := generateUnbufferedChan(totalElements)
 	count := 0
 
-	for output := range mass.Validate(ctx, inputs, allFail[int], CancelF[int], "error") {
+	for output := range Validate(ctx, inputs, allFail[int], CancelF[int], "error") {
 		assert.False(t, output.IsSuccess())
 		count++
 	}
@@ -89,7 +88,7 @@ func Test_MassValidate_WithCancel(t *testing.T) {
 	count := 0
 	cancelOnCount := 1
 	//cancel()
-	for output := range mass.Validate(ctx, inputs, allSuccess[int], CancelF[int], "error") {
+	for output := range Validate(ctx, inputs, allSuccess[int], CancelF[int], "error") {
 
 		if count <= cancelOnCount {
 			assert.True(t, output.IsSuccess())
@@ -114,8 +113,8 @@ func Test_MassValidateAndValidate_True(t *testing.T) {
 	inputs := generateUnbufferedChan(totalElements)
 	count := 0
 
-	for output := range mass.AndValidate(ctx,
-		mass.Validate(ctx, inputs, allSuccess[int], CancelF[int], "error"),
+	for output := range AndValidate(ctx,
+		Validate(ctx, inputs, allSuccess[int], CancelF[int], "error"),
 		allSuccess[int], CancelRopF[int], "and error") {
 		assert.True(t, output.IsSuccess())
 		count++
@@ -131,8 +130,8 @@ func Test_MassValidateAndValidate_False_AtFirst(t *testing.T) {
 	inputs := generateUnbufferedChan(totalElements)
 	count := 0
 
-	for output := range mass.AndValidate(ctx,
-		mass.Validate(ctx, inputs, allFail[int], CancelF[int], "error"),
+	for output := range AndValidate(ctx,
+		Validate(ctx, inputs, allFail[int], CancelF[int], "error"),
 		allSuccess[int], CancelRopF[int], "and error") {
 		assert.False(t, output.IsSuccess())
 		count++
@@ -148,8 +147,8 @@ func Test_MassValidate_AndValidate_False_AtSecond(t *testing.T) {
 	inputs := generateUnbufferedChan(totalElements)
 	count := 0
 
-	for output := range mass.AndValidate(ctx,
-		mass.Validate(ctx, inputs, allSuccess[int], CancelF[int], "error"),
+	for output := range AndValidate(ctx,
+		Validate(ctx, inputs, allSuccess[int], CancelF[int], "error"),
 		allFail[int], CancelRopF[int], "and error") {
 
 		assert.False(t, output.IsSuccess())
@@ -168,8 +167,8 @@ func Test_MassValidate_AndValidate_WithCancel(t *testing.T) {
 	count := 0
 	cancelOnCount := 2
 
-	for output := range mass.AndValidate(ctx,
-		mass.Validate(ctx, inputs, allSuccess[int], CancelF[int], "error"),
+	for output := range AndValidate(ctx,
+		Validate(ctx, inputs, allSuccess[int], CancelF[int], "error"),
 		allFail[int], CancelRopF[int], "and error") {
 
 		if count == cancelOnCount {
@@ -189,8 +188,8 @@ func Test_MassSwitch_Success(t *testing.T) {
 	inputs := generateUnbufferedChan(totalElements)
 	count := 0
 
-	for output := range mass.Switch(ctx,
-		mass.Validate(ctx, inputs, allSuccess[int], CancelF[int], "error"),
+	for output := range Switch(ctx,
+		Validate(ctx, inputs, allSuccess[int], CancelF[int], "error"),
 		successConvertIntToStrResult, CancelRopF[int]) {
 
 		assert.True(t, output.IsSuccess())
@@ -208,8 +207,8 @@ func Test_MassSwitch_Fail(t *testing.T) {
 	inputs := generateUnbufferedChan(totalElements)
 	count := 0
 
-	for output := range mass.Switch(ctx,
-		mass.Validate(ctx, inputs, allSuccess[int], CancelF[int], "error"),
+	for output := range Switch(ctx,
+		Validate(ctx, inputs, allSuccess[int], CancelF[int], "error"),
 		failConvertIntToStrResult, CancelRopF[int]) {
 
 		assert.False(t, output.IsSuccess())
@@ -227,8 +226,8 @@ func Test_MassMap_Success(t *testing.T) {
 	inputs := generateUnbufferedChan(totalElements)
 	count := 0
 
-	for output := range mass.Map(ctx,
-		mass.Validate(ctx, inputs, allSuccess[int], CancelF[int], "error"),
+	for output := range Map(ctx,
+		Validate(ctx, inputs, allSuccess[int], CancelF[int], "error"),
 		successConvertIntToStr, CancelRopF[int]) {
 
 		assert.True(t, output.IsSuccess())
@@ -246,8 +245,8 @@ func Test_MassMap_Fail(t *testing.T) {
 	inputs := generateUnbufferedChan(totalElements)
 	count := 0
 
-	for output := range mass.Map(ctx,
-		mass.Validate(ctx, inputs, allSuccess[int], CancelF[int], "error"),
+	for output := range Map(ctx,
+		Validate(ctx, inputs, allSuccess[int], CancelF[int], "error"),
 		failConvertIntToStr, CancelRopF[int]) {
 
 		assert.True(t, output.IsSuccess())
@@ -265,8 +264,8 @@ func Test_MassTry_Success(t *testing.T) {
 	inputs := generateUnbufferedChan(totalElements)
 	count := 0
 
-	for output := range mass.Try(ctx,
-		mass.Validate(ctx, inputs, allSuccess[int], CancelF[int], "error"),
+	for output := range Try(ctx,
+		Validate(ctx, inputs, allSuccess[int], CancelF[int], "error"),
 		successConvertIntToStrWithErr, CancelRopF[int]) {
 
 		assert.True(t, output.IsSuccess())
@@ -284,8 +283,8 @@ func Test_MassTry_Fail(t *testing.T) {
 	inputs := generateUnbufferedChan(totalElements)
 	count := 0
 
-	for output := range mass.Try(ctx,
-		mass.Validate(ctx, inputs, allSuccess[int], CancelF[int], "error"),
+	for output := range Try(ctx,
+		Validate(ctx, inputs, allSuccess[int], CancelF[int], "error"),
 		failConvertIntToStrWithErr, CancelRopF[int]) {
 
 		assert.False(t, output.IsSuccess())
@@ -304,8 +303,8 @@ func Test_MassDoubleMap_Success(t *testing.T) {
 	inputs := generateUnbufferedChan(totalElements)
 	count := 0
 
-	for output := range mass.DoubleMap(ctx,
-		mass.Validate(ctx, inputs, allSuccess[int], CancelF[int], "error"),
+	for output := range DoubleMap(ctx,
+		Validate(ctx, inputs, allSuccess[int], CancelF[int], "error"),
 		successConvertIntToStr, failConvertIntToStrProcessError,
 		cancelConvertIntToStrProcessError, CancelRopF[int]) {
 
@@ -324,8 +323,8 @@ func Test_MassDoubleMap_Fail(t *testing.T) {
 	inputs := generateUnbufferedChan(totalElements)
 	count := 0
 
-	for output := range mass.DoubleMap(ctx,
-		mass.Validate(ctx, inputs, allFail[int], CancelF[int], "error"),
+	for output := range DoubleMap(ctx,
+		Validate(ctx, inputs, allFail[int], CancelF[int], "error"),
 		successConvertIntToStr, failConvertIntToStrProcessError, cancelConvertIntToStrProcessError,
 		CancelRopF[int]) {
 
@@ -344,8 +343,8 @@ func Test_MassFinally_Success(t *testing.T) {
 	inputs := generateUnbufferedChan(totalElements)
 	count := 0
 
-	for output := range mass.Finally(ctx,
-		mass.Validate(ctx, inputs, allSuccess[int], CancelF[int], "error"),
+	for output := range Finally(ctx,
+		Validate(ctx, inputs, allSuccess[int], CancelF[int], "error"),
 		successFinally, failConvertIntToStrProcessError, CancelStrF[int]) {
 
 		assert.Equal(t, "ok", output)
@@ -363,8 +362,8 @@ func Test_MassFinally_Fail(t *testing.T) {
 	inputs := generateUnbufferedChan(totalElements)
 	count := 0
 
-	for output := range mass.Finally(ctx,
-		mass.Validate(ctx, inputs, allFail[int], CancelF[int], "error"),
+	for output := range Finally(ctx,
+		Validate(ctx, inputs, allFail[int], CancelF[int], "error"),
 		successFinally, failConvertIntToStrProcessError, CancelStrF[int]) {
 
 		assert.Equal(t, "error", output)
