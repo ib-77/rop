@@ -561,7 +561,15 @@ func SucceedWithCtx[In any, Out any](ctx context.Context, input rop.Result[In],
 }
 
 func FailWith[In any, Out any](input rop.Result[In], failF func(r rop.Result[In]) error) rop.Result[Out] {
-	return rop.Fail[Out](failF(input))
+	if input.IsSuccess() {
+		return rop.Fail[Out](failF(input))
+	}
+
+	if input.IsCancel() {
+		return rop.Cancel[Out](input.Err()) // strange, is already canceled!
+	}
+
+	return rop.Fail[Out](input.Err()) // strange, is already failed
 }
 
 func Fail[In any](err error) rop.Result[In] {
@@ -570,11 +578,28 @@ func Fail[In any](err error) rop.Result[In] {
 
 func FailWithCtx[In any, Out any](ctx context.Context, input rop.Result[In],
 	failF func(ctx context.Context, r rop.Result[In]) error) rop.Result[Out] {
-	return rop.Fail[Out](failF(ctx, input))
+
+	if input.IsSuccess() {
+		return rop.Fail[Out](failF(ctx, input))
+	}
+
+	if input.IsCancel() {
+		return rop.Cancel[Out](input.Err()) // strange, is already canceled!
+	}
+
+	return rop.Fail[Out](input.Err()) // strange, is already failed
 }
 
 func CancelWith[In any, Out any](input rop.Result[In], cancelF func(r rop.Result[In]) error) rop.Result[Out] { // cancelF out
-	return rop.Cancel[Out](cancelF(input))
+	if input.IsSuccess() {
+		return rop.Cancel[Out](cancelF(input))
+	}
+
+	if input.IsCancel() {
+		return rop.Cancel[Out](input.Err())
+	}
+
+	return rop.Fail[Out](input.Err())
 }
 
 func Cancel[In any](err error) rop.Result[In] {
@@ -582,6 +607,15 @@ func Cancel[In any](err error) rop.Result[In] {
 }
 
 func CancelWithCtx[In any, Out any](ctx context.Context, input rop.Result[In],
-	cancelF func(ctx context.Context, r rop.Result[In]) error) rop.Result[Out] { // cancelF out
-	return rop.Cancel[Out](cancelF(ctx, input))
+	cancelF func(ctx context.Context, r rop.Result[In]) error) rop.Result[Out] {
+
+	if input.IsSuccess() {
+		return rop.Cancel[Out](cancelF(ctx, input))
+	}
+
+	if input.IsCancel() {
+		return rop.Cancel[Out](input.Err())
+	}
+
+	return rop.Fail[Out](input.Err())
 }
