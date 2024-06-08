@@ -404,6 +404,14 @@ func makeOutputChs[Out any](outputChCount int) (chan chan rop.Result[Out], []cha
 	return outputChs, outs
 }
 
+func closeOutputChs[Out any](outputChs chan chan rop.Result[Out], outs []chan rop.Result[Out]) {
+	for i := 0; i < len(outs); i++ {
+		close(outs[i])
+	}
+	close(outputChs)
+	outs = nil
+}
+
 func makeFinallyOutputChs[Out any](outputChCount int) (chan chan Out, []chan Out) {
 	outputChs := make(chan chan Out, outputChCount)
 	outs := make([]chan Out, outputChCount)
@@ -413,14 +421,6 @@ func makeFinallyOutputChs[Out any](outputChCount int) (chan chan Out, []chan Out
 		outs[i] = c
 	}
 	return outputChs, outs
-}
-
-func closeOutputChs[Out any](outputChs chan chan rop.Result[Out], outs []chan rop.Result[Out]) {
-	for i := 0; i < len(outs); i++ {
-		close(outs[i])
-	}
-	close(outputChs)
-	outs = nil
 }
 
 func closeFinallyOutputChs[Out any](outputChs chan chan Out, outs []chan Out) {

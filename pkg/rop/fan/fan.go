@@ -1,6 +1,7 @@
 package fan
 
 import (
+	"container/ring"
 	"context"
 	"github.com/ib-77/rop/pkg/rop"
 	"sync"
@@ -56,9 +57,9 @@ func InFinally[T any](ctx context.Context, inputChs chan chan T) <-chan T {
 	return outputCh
 }
 
-func OutRand[T any](ctx context.Context, inputCh chan rop.Result[T], chCount int) chan chan rop.Result[T] {
+func OutRand[T any](ctx context.Context, inputCh chan rop.Result[T], chCount int) []chan rop.Result[T] {
 
-	outputChs, outs := makeOutputChs[T](chCount)
+	outs := makeOutputChs[T](chCount)
 
 	var wg sync.WaitGroup
 	wg.Add(chCount)
@@ -72,7 +73,7 @@ func OutRand[T any](ctx context.Context, inputCh chan rop.Result[T], chCount int
 				case <-ctx.Done():
 					return
 				default:
-					ch <- <-inputCh // <=> o <- (<-input)
+					ch <- <-inputCh
 				}
 			}
 		}(outs[chIndex])
@@ -80,27 +81,96 @@ func OutRand[T any](ctx context.Context, inputCh chan rop.Result[T], chCount int
 
 	go func() {
 		wg.Wait()
-		closeOutputChs[T](outputChs, outs)
+		closeOutputChs[T](outs)
 	}()
 
+	return outs
+}
+
+func OutNext[T any](ctx context.Context, inputCh chan rop.Result[T], chCount int) []chan rop.Result[T] {
+	outs := makeOutputChs[T](chCount)
+	nextChIndex := make(chan int, 1)
+	r := makeRing(chCount)
+	nextChIndex <- r.Value.(int)
+
+	var wg sync.WaitGroup
+	wg.Add(chCount)
+
+	for chIndex := 0; chIndex < chCount; chIndex++ {
+		outCh := outs[chIndex]
+		go func(ch chan<- rop.Result[T], index int) {
+			defer wg.Done()
+
+			for {
+				select {
+				case <-ctx.Done():
+					return
+				default:
+					select {
+					case next, ok := <-nextChIndex:
+						if !ok {
+							break
+						}
+						outs[next] <- <-inputCh
+						r = r.Next()
+						nextChIndex <- r.Value.(int)
+						break
+					default:
+						break
+					}
+				}
+			}
+		}(outCh, chIndex)
+	}
+
+	go func() {
+		wg.Wait()
+		closeOutputChs[T](outs)
+		close(nextChIndex)
+		nextChIndex = nil
+	}()
+
+	return outs
+}
+
+func ChsToSlice[T any](inputChs chan chan T, count int) []chan T {
+	outputChs := make([]chan T, count)
+	for i := 0; i < count; i++ {
+		outputChs[i] = <-inputChs
+	}
 	return outputChs
 }
 
-func makeOutputChs[Out any](outputChCount int) (chan chan rop.Result[Out], []chan rop.Result[Out]) {
-	outputChs := make(chan chan rop.Result[Out], outputChCount)
-	outs := make([]chan rop.Result[Out], outputChCount)
-	for i := 0; i < outputChCount; i++ {
-		c := make(chan rop.Result[Out])
-		outputChs <- c
-		outs[i] = c
+// bug
+func SliceToChs[T any](inputChs []chan T) chan chan T {
+	count := len(inputChs)
+	outputChs := make(chan chan T, count)
+	defer close(outputChs)
+	for i := 0; i < count; i++ {
+		outputChs <- inputChs[i]
 	}
-	return outputChs, outs
+	return outputChs
 }
 
-func closeOutputChs[Out any](outputChs chan chan rop.Result[Out], outs []chan rop.Result[Out]) {
+func makeRing(count int) *ring.Ring {
+	r := ring.New(count)
+	for i := 0; i < count; i++ {
+		r.Value = i
+		r = r.Next()
+	}
+	return r
+}
+
+func makeOutputChs[Out any](outputChCount int) []chan rop.Result[Out] {
+	outs := make([]chan rop.Result[Out], outputChCount)
+	for i := 0; i < outputChCount; i++ {
+		outs[i] = make(chan rop.Result[Out])
+	}
+	return outs
+}
+
+func closeOutputChs[Out any](outs []chan rop.Result[Out]) {
 	for i := 0; i < len(outs); i++ {
 		close(outs[i])
 	}
-	close(outputChs)
-	outs = nil
 }
