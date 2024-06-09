@@ -141,7 +141,6 @@ func ChsToSlice[T any](inputChs chan chan T, count int) []chan T {
 	return outputChs
 }
 
-// bug
 func SliceToChs[T any](inputChs []chan T) chan chan T {
 	count := len(inputChs)
 	outputChs := make(chan chan T, count)

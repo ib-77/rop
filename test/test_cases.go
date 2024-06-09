@@ -143,7 +143,7 @@ func cancelF[T any](_ context.Context, in T) error {
 	return errors.New("some error")
 }
 
-func cancelRopF[T any](_ context.Context, in rop.Result[T]) error {
+func cancelRopF[T any](_ context.Context, in T) error {
 	return errors.New("some error")
 }
 

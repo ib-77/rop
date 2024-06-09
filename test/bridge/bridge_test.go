@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/ib-77/rop/pkg/rop"
+	"github.com/ib-77/rop/pkg/rop/bridge"
 	"github.com/stretchr/testify/assert"
 	"testing"
 	"time"
@@ -23,7 +24,7 @@ func TestValidate(t *testing.T) {
 	inputs <- input2
 
 	ctx := context.Background()
-	outputs := Validate(ctx, inputs, validate, cancel, "err")
+	outputs := bridge.Validate(ctx, inputs, validate, cancel, "err")
 
 	assert.NotEmpty(t, outputs)
 	output1 := <-outputs
@@ -51,8 +52,8 @@ func TestValidateAndValidate(t *testing.T) {
 	inputs <- input2
 
 	ctx := context.Background()
-	outputs := AndValidate(ctx,
-		Validate(ctx, inputs, validate, cancel, "err"),
+	outputs := bridge.AndValidate(ctx,
+		bridge.Validate(ctx, inputs, validate, cancel, "err"),
 		validateT, cancelT, "and err")
 
 	assert.NotEmpty(t, outputs)
@@ -82,8 +83,8 @@ func TestValidateWithErrAndValidate(t *testing.T) {
 
 	ctx := context.Background()
 
-	outputs := AndValidate(ctx,
-		Validate(ctx, inputs, validateWithError, cancel, "err"),
+	outputs := bridge.AndValidate(ctx,
+		bridge.Validate(ctx, inputs, validateWithError, cancel, "err"),
 		validateT, cancelT, "and err")
 
 	assert.NotEmpty(t, outputs)
@@ -114,8 +115,8 @@ func TestValidateWithCancelAndValidate(t *testing.T) {
 	ctx, cancellation := context.WithTimeout(context.Background(), time.Second*3)
 	defer cancellation()
 
-	outputs := AndValidate(ctx,
-		Validate(ctx, inputs, validateLongRunning, cancel, "err"),
+	outputs := bridge.AndValidate(ctx,
+		bridge.Validate(ctx, inputs, validateLongRunning, cancel, "err"),
 		validateT, cancelT, "and err")
 
 	assert.NotEmpty(t, outputs)
@@ -143,9 +144,9 @@ func TestValidateAndValidateAndFinallySuccess(t *testing.T) {
 
 	ctx := context.Background()
 
-	outputs := Finally(ctx,
-		AndValidate(ctx,
-			Validate(ctx, inputs, validateNoDelay, cancel, "err"),
+	outputs := bridge.Finally(ctx,
+		bridge.AndValidate(ctx,
+			bridge.Validate(ctx, inputs, validateNoDelay, cancel, "err"),
 			validateNoDelay, cancelT, "and err"), successFinally, failFinally, cancelFinally)
 
 	assert.NotEmpty(t, outputs)
@@ -198,8 +199,8 @@ func cancel(ctx context.Context, in int) error {
 	return fmt.Errorf("operation was cancelled %d", in)
 }
 
-func cancelT(ctx context.Context, in rop.Result[int]) error {
-	return fmt.Errorf("and operation was cancelled %v", in.Result())
+func cancelT(ctx context.Context, in int) error {
+	return fmt.Errorf("and operation was cancelled %v", in)
 }
 
 func successFinally(ctx context.Context, in int) string {

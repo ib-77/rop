@@ -3,6 +3,7 @@ package fan
 import (
 	"context"
 	"github.com/ib-77/rop/pkg/rop"
+	"github.com/ib-77/rop/pkg/rop/fan"
 	"github.com/stretchr/testify/assert"
 	"sync"
 	"testing"
@@ -18,7 +19,7 @@ func Test_OutNext(t *testing.T) {
 	inputCh <- rop.Success(5)
 
 	ctx := context.Background()
-	outputChs := OutNext[int](ctx, inputCh, 4)
+	outputChs := fan.OutNext[int](ctx, inputCh, 4)
 
 	wg := sync.WaitGroup{}
 	wg.Add(len(outputChs))
@@ -61,7 +62,7 @@ func Test_OutNext_SliceToChs(t *testing.T) {
 	inputCh <- rop.Success(5)
 
 	ctx := context.Background()
-	outputChs := SliceToChs(OutNext[int](ctx, inputCh, 4))
+	outputChs := fan.SliceToChs(fan.OutNext[int](ctx, inputCh, 4))
 
 	wg := sync.WaitGroup{}
 	wg.Add(len(outputChs))

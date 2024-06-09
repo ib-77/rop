@@ -57,7 +57,7 @@ func Validate[T any](ctx context.Context, inputChs chan chan T,
 
 func AndValidate[T any](ctx context.Context, inputChs chan chan rop.Result[T],
 	validateF func(ctx context.Context, in T) bool,
-	cancelF func(ctx context.Context, in rop.Result[T]) error, errMsg string) chan chan rop.Result[T] {
+	cancelF func(ctx context.Context, in T) error, errMsg string) chan chan rop.Result[T] {
 
 	outChs, outs := makeOutputChs[T](len(inputChs))
 
@@ -104,7 +104,7 @@ func AndValidate[T any](ctx context.Context, inputChs chan chan rop.Result[T],
 
 func Map[In, Out any](ctx context.Context, inputChs chan chan rop.Result[In],
 	mapF func(ctx context.Context, r In) Out,
-	cancelF func(ctx context.Context, r rop.Result[In]) error) chan chan rop.Result[Out] {
+	cancelF func(ctx context.Context, r In) error) chan chan rop.Result[Out] {
 
 	outChs, outs := makeOutputChs[Out](len(inputChs))
 
@@ -152,7 +152,7 @@ func Map[In, Out any](ctx context.Context, inputChs chan chan rop.Result[In],
 
 func Tee[T any](ctx context.Context, inputChs chan chan rop.Result[T],
 	deadEndF func(ctx context.Context, r rop.Result[T]),
-	cancelF func(ctx context.Context, r rop.Result[T]) error) chan chan rop.Result[T] {
+	cancelF func(ctx context.Context, r T) error) chan chan rop.Result[T] {
 
 	outChs, outs := makeOutputChs[T](len(inputChs))
 
@@ -200,7 +200,7 @@ func Tee[T any](ctx context.Context, inputChs chan chan rop.Result[T],
 
 func Switch[In, Out any](ctx context.Context, inputChs chan chan rop.Result[In],
 	switchF func(ctx context.Context, r In) rop.Result[Out],
-	cancelF func(ctx context.Context, r rop.Result[In]) error) chan chan rop.Result[Out] {
+	cancelF func(ctx context.Context, r In) error) chan chan rop.Result[Out] {
 
 	outChs, outs := makeOutputChs[Out](len(inputChs))
 
@@ -250,7 +250,7 @@ func DoubleMap[In any, Out any](ctx context.Context, inputChs chan chan rop.Resu
 	successF func(ctx context.Context, r In) Out,
 	failF func(ctx context.Context, err error) Out,
 	cancelF func(ctx context.Context, err error) Out,
-	massCancelF func(ctx context.Context, r rop.Result[In]) error) chan chan rop.Result[Out] {
+	massCancelF func(ctx context.Context, r In) error) chan chan rop.Result[Out] {
 
 	outChs, outs := makeOutputChs[Out](len(inputChs))
 
@@ -298,7 +298,7 @@ func DoubleMap[In any, Out any](ctx context.Context, inputChs chan chan rop.Resu
 
 func Try[In, Out any](ctx context.Context, inputChs chan chan rop.Result[In],
 	withErrF func(ctx context.Context, r In) (Out, error),
-	cancelF func(ctx context.Context, r rop.Result[In]) error) chan chan rop.Result[Out] {
+	cancelF func(ctx context.Context, r In) error) chan chan rop.Result[Out] {
 
 	outChs, outs := makeOutputChs[Out](len(inputChs))
 
@@ -433,7 +433,7 @@ func closeFinallyOutputChs[Out any](outputChs chan chan Out, outs []chan Out) {
 
 func alternativeToRange[T any](ctx context.Context, input <-chan rop.Result[T],
 	deadEndF func(ctx context.Context, r rop.Result[T]),
-	cancelF func(ctx context.Context, r rop.Result[T]) error) <-chan rop.Result[T] {
+	cancelF func(ctx context.Context, r T) error) <-chan rop.Result[T] {
 	outCh := make(chan rop.Result[T])
 	go func() {
 		defer close(outCh)

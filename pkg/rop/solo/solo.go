@@ -607,10 +607,10 @@ func Cancel[In any](err error) rop.Result[In] {
 }
 
 func CancelWithCtx[In any, Out any](ctx context.Context, input rop.Result[In],
-	cancelF func(ctx context.Context, r rop.Result[In]) error) rop.Result[Out] {
+	cancelF func(ctx context.Context, r In) error) rop.Result[Out] {
 
 	if input.IsSuccess() {
-		return rop.Cancel[Out](cancelF(ctx, input))
+		return rop.Cancel[Out](cancelF(ctx, input.Result()))
 	}
 
 	if input.IsCancel() {
