@@ -3,14 +3,15 @@ package solo
 import (
 	"context"
 	"errors"
-	"github.com/ib-77/rop/pkg/rop"
-	"github.com/ib-77/rop/pkg/rop/solo"
-	"github.com/ib-77/rop/test"
-	"github.com/stretchr/testify/assert"
 	"os"
 	"strconv"
 	"testing"
 	"time"
+
+	"github.com/ib-77/rop/pkg/rop"
+	"github.com/ib-77/rop/pkg/rop/solo"
+	"github.com/ib-77/rop/test"
+	"github.com/stretchr/testify/assert"
 )
 
 func init() {
