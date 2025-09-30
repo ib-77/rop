@@ -803,6 +803,20 @@ func FinallyWithCtx[Out, In any](ctx context.Context, input rop.Result[In],
 	}
 }
 
+func FinallyWithCtxWithCancel[Out, In any](ctx context.Context, input <-chan rop.Result[In],
+	successF func(ctx context.Context, r In) Out, failOrCancelF func(ctx context.Context, err error) Out) Out {
+	select {
+	case <-ctx.Done():
+		return failOrCancelF(ctx, errCancelled)
+	case res := <-input:
+		if res.IsSuccess() {
+			return successF(ctx, res.Result())
+		} else {
+			return failOrCancelF(ctx, res.Err())
+		}
+	}
+}
+
 func FinallyTeeWithCtx[In any](ctx context.Context, input rop.Result[In],
 	successF func(ctx context.Context, r In), failOrCancelF func(ctx context.Context, err error)) {
 	if input.IsSuccess() {
