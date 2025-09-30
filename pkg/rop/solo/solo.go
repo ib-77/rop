@@ -4,9 +4,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/ib-77/rop/pkg/rop"
 	"time"
+
+	"github.com/ib-77/rop/pkg/rop"
 )
+
+var errCancelled = errors.New("cancelled")
 
 func Validate[T any](input T, validateF func(in T) bool, errMsg string) rop.Result[T] {
 
@@ -25,6 +28,36 @@ func ValidateWithCtx[T any](ctx context.Context, input T,
 	} else {
 		return rop.Fail[T](errors.New(errMsg))
 	}
+}
+
+// with cancel
+func ValidateWithCtxWithCancel[T any](ctx context.Context, input T,
+	validateF func(ctx context.Context, in T) bool, errMsg string) <-chan rop.Result[T] {
+
+	validationCh := make(chan bool)
+	resCh := make(chan rop.Result[T])
+
+	go func() {
+		validationCh <- validateF(ctx, input)
+		close(validationCh)
+	}()
+
+	go func() {
+		defer close(resCh)
+
+		select {
+		case isValid := <-validationCh:
+			if isValid {
+				resCh <- rop.Success(input)
+			} else {
+				resCh <- rop.Fail[T](errors.New(errMsg))
+			}
+		case <-ctx.Done():
+			resCh <- rop.Cancel[T](errCancelled)
+		}
+	}()
+
+	return resCh
 }
 
 func ValidateWithErr[T any](input T, validateF func(in T) (bool, error)) rop.Result[T] {
@@ -99,6 +132,41 @@ func AndValidateWithCtx[T any](ctx context.Context, input rop.Result[T],
 		}
 	}
 	return input
+}
+
+// with cancel
+func AndValidateWithCtxWithCancel[T any](ctx context.Context, input rop.Result[T],
+	validateF func(ctx context.Context, in T) bool, errMsg string) <-chan rop.Result[T] {
+
+	validationCh := make(chan bool)
+	resCh := make(chan rop.Result[T])
+
+	go func() {
+		if input.IsSuccess() {
+			validationCh <- validateF(ctx, input.Result())
+		}
+		close(validationCh)
+	}()
+
+	go func() {
+		defer close(resCh)
+		if input.IsSuccess() {
+			select {
+			case isValid := <-validationCh:
+				if isValid {
+					resCh <- rop.Success(input.Result())
+				} else {
+					resCh <- rop.Fail[T](errors.New(errMsg))
+				}
+			case <-ctx.Done():
+				resCh <- rop.Cancel[T](errCancelled)
+			}
+		} else {
+			resCh <- input
+		}
+	}()
+
+	return resCh
 }
 
 func AndValidateWithErr[T any](input rop.Result[T], validateF func(in T) (bool, error)) rop.Result[T] {
@@ -180,6 +248,44 @@ func SwitchWithCtx[In any, Out any](ctx context.Context,
 	}
 }
 
+// with cancel
+func SwitchWithCtxWithCancel[In any, Out any](ctx context.Context,
+	input rop.Result[In], switchF func(ctx context.Context, r In) rop.Result[Out]) <-chan rop.Result[Out] {
+
+	switchCh := make(chan rop.Result[Out])
+	outCh := make(chan rop.Result[Out])
+
+	go func() {
+		if input.IsSuccess() {
+			switchCh <- switchF(ctx, input.Result())
+		}
+		close(switchCh)
+	}()
+
+	go func() {
+		defer close(outCh)
+
+		if input.IsSuccess() {
+
+			select {
+			case res := <-switchCh:
+				outCh <- res
+			case <-ctx.Done():
+				outCh <- rop.Cancel[Out](errCancelled)
+			}
+
+		} else {
+			if input.IsCancel() {
+				outCh <- rop.Cancel[Out](input.Err())
+			} else {
+				outCh <- rop.Fail[Out](input.Err())
+			}
+		}
+	}()
+
+	return outCh
+}
+
 func Map[In any, Out any](input rop.Result[In], mapF func(r In) Out) rop.Result[Out] {
 
 	if input.IsSuccess() {
@@ -205,6 +311,42 @@ func MapWithCtx[In any, Out any](ctx context.Context,
 			return rop.Fail[Out](input.Err())
 		}
 	}
+}
+
+// with cancel
+func MapWithCtxWithCancel[In any, Out any](ctx context.Context,
+	input rop.Result[In], mapF func(ctx context.Context, r In) Out) <-chan rop.Result[Out] {
+
+	mapCh := make(chan rop.Result[Out])
+	outCh := make(chan rop.Result[Out])
+
+	go func() {
+		if input.IsSuccess() {
+			mapCh <- rop.Success(mapF(ctx, input.Result()))
+		}
+		close(mapCh)
+	}()
+
+	go func() {
+		defer close(outCh)
+
+		if input.IsSuccess() {
+			select {
+			case res := <-mapCh:
+				outCh <- res
+			case <-ctx.Done():
+				outCh <- rop.Cancel[Out](errCancelled)
+			}
+		} else {
+			if input.IsCancel() {
+				outCh <- rop.Cancel[Out](input.Err())
+			} else {
+				outCh <- rop.Fail[Out](input.Err())
+			}
+		}
+	}()
+
+	return outCh
 }
 
 func MapWithErrWithCtx[In any, Out any](ctx context.Context,
@@ -270,6 +412,35 @@ func TeeWithCtx[T any](ctx context.Context, input rop.Result[T],
 	return input
 }
 
+// with cancel
+func TeeWithCtxWithCancel[T any](ctx context.Context, input rop.Result[T],
+	deadEndF func(ctx context.Context, r rop.Result[T])) <-chan rop.Result[T] {
+
+	teeCh := make(chan struct{})
+	outCh := make(chan rop.Result[T])
+
+	go func() {
+		if input.IsSuccess() {
+			deadEndF(ctx, input)
+		}
+		close(teeCh)
+	}()
+
+	go func() {
+		defer close(outCh)
+
+		if input.IsSuccess() {
+			select {
+			case <-teeCh:
+			case <-ctx.Done():
+			}
+		}
+		outCh <- input
+	}()
+
+	return outCh
+}
+
 // DoubleTee TODO unit test
 func DoubleTee[T any](input rop.Result[T], deadEndF func(r T),
 	deadEndWithErrF func(err error)) rop.Result[T] {
@@ -294,6 +465,38 @@ func DoubleTeeWithCtx[T any](ctx context.Context, input rop.Result[T],
 	}
 
 	return input
+}
+
+// with cancel
+func DoubleTeeWithCtxWithCancel[T any](ctx context.Context, input rop.Result[T],
+	deadEndF func(ctx context.Context, r T),
+	deadEndWithErrF func(ctx context.Context, err error)) <-chan rop.Result[T] {
+
+	teeCh := make(chan struct{})
+	outCh := make(chan rop.Result[T])
+
+	go func() {
+		if input.IsSuccess() {
+			deadEndF(ctx, input.Result())
+		} else {
+			deadEndWithErrF(ctx, input.Err())
+		}
+		close(teeCh)
+	}()
+
+	go func() {
+		defer close(outCh)
+
+		if input.IsSuccess() {
+			select {
+			case <-teeCh:
+			case <-ctx.Done():
+			}
+		}
+		outCh <- input
+	}()
+
+	return outCh
 }
 
 func DoubleMap[In any, Out any](input rop.Result[In], successF func(r In) Out,
@@ -337,6 +540,54 @@ func DoubleMapWithCtx[In any, Out any](ctx context.Context, input rop.Result[In]
 	}
 }
 
+// with cancel
+func DoubleMapWithCtxWithCancel[In any, Out any](ctx context.Context, input rop.Result[In],
+	successF func(ctx context.Context, r In) Out, failF func(ctx context.Context, err error) Out,
+	cancelF func(ctx context.Context, err error) Out) <-chan rop.Result[Out] {
+
+	mapCh := make(chan rop.Result[Out])
+	outCh := make(chan rop.Result[Out])
+
+	go func() {
+
+		if input.IsSuccess() {
+			mapCh <- rop.Success(successF(ctx, input.Result()))
+		} else if input.IsCancel() {
+			cancelF(ctx, input.Err())
+		} else {
+			failF(ctx, input.Err())
+		}
+
+		close(mapCh)
+	}()
+
+	go func() {
+		defer close(outCh)
+
+		if input.IsSuccess() {
+			select {
+			case res := <-mapCh:
+				outCh <- res
+			case <-ctx.Done():
+				outCh <- rop.Cancel[Out](errCancelled)
+			}
+		} else {
+			select {
+			case <-mapCh:
+				if input.IsCancel() {
+					outCh <- rop.Cancel[Out](input.Err())
+				} else {
+					outCh <- rop.Fail[Out](input.Err())
+				}
+			case <-ctx.Done():
+				outCh <- rop.Cancel[Out](errCancelled)
+			}
+		}
+	}()
+
+	return outCh
+}
+
 func Try[In any, Out any](input rop.Result[In], withErrF func(r In) (Out, error)) rop.Result[Out] {
 
 	if input.IsSuccess() {
@@ -374,6 +625,48 @@ func TryWithCtx[In any, Out any](ctx context.Context, input rop.Result[In],
 	} else {
 		return rop.Fail[Out](input.Err())
 	}
+}
+
+func TryWithCtxWithCancel[In any, Out any](ctx context.Context, input rop.Result[In],
+	withErrF func(ctx context.Context, r In) (Out, error)) <-chan rop.Result[Out] {
+
+	tryCh := make(chan rop.Result[Out])
+	outCh := make(chan rop.Result[Out])
+
+	go func() {
+		defer close(tryCh)
+		if input.IsSuccess() {
+			out, err := withErrF(ctx, input.Result())
+			if err != nil {
+				outCh <- rop.Fail[Out](err)
+				return
+			}
+			outCh <- rop.Success(out)
+		}
+	}()
+
+	go func() {
+		if input.IsSuccess() {
+			select {
+			case res := <-tryCh:
+				outCh <- res
+			case <-ctx.Done():
+				outCh <- rop.Cancel[Out](errCancelled)
+			}
+		} else {
+			select {
+			case <-tryCh:
+				if input.IsCancel() {
+					outCh <- rop.Cancel[Out](input.Err())
+				} else {
+					outCh <- rop.Fail[Out](input.Err())
+				}
+			case <-ctx.Done():
+				outCh <- rop.Cancel[Out](errCancelled)
+			}
+		}
+	}()
+	return outCh
 }
 
 func RetryWithCtx[In any, Out any](ctx context.Context, input rop.Result[In],
